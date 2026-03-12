@@ -1,5 +1,7 @@
 import warnings
+
 warnings.filterwarnings("ignore", message="Core Pydantic V1 functionality isn't compatible")
+warnings.filterwarnings("ignore", message="Please see the migration guide")
 
 from langchain_openai import ChatOpenAI, OpenAI
 import os

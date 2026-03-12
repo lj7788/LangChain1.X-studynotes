@@ -160,18 +160,35 @@ python 阶段2/20_rag_sg_load.py
 
 ### 1. Memory
 
-- ConversationBufferMemory
-- ConversationSummaryMemory
-- Entity Memory
-- 持久化记忆
+- ConversationBufferMemory: 完整的对话历史
+- ConversationSummaryMemory: 对话摘要，减少 token 消耗
+- EntityMemory: 实体记忆，自动提取关键实体
+- 持久化记忆: 保存和加载对话历史
 
 ### 2. Retrieval
 
-- RetrievalQA
-- VectorStoreRetriever
-- ContextualCompression
-- MultiQueryRetriever
-- Ensemble Retriever
+- ContextualCompression: 上下文压缩检索
+- MultiQueryRetriever: 多查询检索
+- EnsembleRetriever: 集成检索
+- TimeWeightedRetriever: 时间加权检索
+- 自定义 Retriever: 根据业务需求定制
+
+### 示例代码
+
+| 文件 | 内容 |
+| ---- | ---- |
+| 01_memory_buffer.py | ConversationBufferMemory 基础 |
+| 02_memory_summary.py | ConversationSummaryMemory 对话摘要 |
+| 03_memory_entity.py | EntityMemory 实体记忆 |
+| 04_memory_persist.py | 记忆的保存与加载 |
+| 05_memory_lcel.py | LCEL 中使用 Memory |
+| 06_retrieval_compression.py | ContextualCompression 上下文压缩 |
+| 07_retrieval_multi_query.py | MultiQueryRetriever 多查询检索 |
+| 08_retrieval_ensemble.py | EnsembleRetriever 集成检索 |
+| 09_retrieval_time_weighted.py | TimeWeightedRetriever 时间加权检索 |
+| 10_retrieval_custom.py | 自定义 Retriever |
+
+**代码位置：** `./阶段3/`
 
 ---
 
