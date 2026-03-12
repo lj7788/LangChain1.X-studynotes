@@ -17,10 +17,12 @@ human_prompt = HumanMessagePromptTemplate.from_template("{question}")
 
 prompt = ChatPromptTemplate.from_messages([system_prompt, human_prompt])
 
-result = prompt.format(
-    role="技术专家",
-    tone="专业",
-    question="什么是 LangChain?"
+result = prompt.invoke(
+    {
+        "role": "技术专家",
+        "tone": "专业",
+        "question": "什么是 LangChain?"
+    }
 )
 print("格式化后的提示词:")
 for msg in result.messages:
@@ -77,44 +79,47 @@ prompt = ChatPromptTemplate.from_messages([system_prompt, human_prompt])
 
 ---
 
-### 第 12-15 行：格式化并输出
+### 第 12-17 行：调用 invoke 并输出
 ```python
-result = prompt.format(
-    role="技术专家",
-    tone="专业",
-    question="什么是 LangChain?"
+result = prompt.invoke(
+    {
+        "role": "技术专家",
+        "tone": "专业",
+        "question": "什么是 LangChain?"
+    }
 )
 print("格式化后的提示词:")
 for msg in result.messages:
     print(f"- {msg.type}: {msg.content}")
 ```
-- 传入所有变量的值
-- 遍历输出每条消息
+- 使用 `invoke()` 方法返回 `ChatPromptValue` 对象
+- 该对象有 `.messages` 属性，可以遍历每条消息
+- 传入所有变量的值到字典中
 
 ---
 
 ## 执行流程
 
 ```
-输入: prompt.format(role="技术专家", tone="专业", question="什么是 LangChain?")
+输入: prompt.invoke({"role": "技术专家", "tone": "专业", "question": "什么是 LangChain?"})
     ↓
 ┌─────────────────────────────────────┐
 │ SystemMessagePromptTemplate        │
 │ "你是一个 {role}，用 {tone}..."     │
-│ ↓ format                            │
+│ ↓ invoke                            │
 │ "你是一个 技术专家，用 专业的..."    │
 └─────────────────────────────────────┘
     ↓
 ┌─────────────────────────────────────┐
 │ HumanMessagePromptTemplate          │
 │ "{question}"                        │
-│ ↓ format                            │
+│ ↓ invoke                            │
 │ "什么是 LangChain?"                 │
 └─────────────────────────────────────┘
     ↓
 组合: [SystemMessage, HumanMessage]
     ↓
-输出: ChatPromptTemplate(messages=[...])
+输出: ChatPromptValue(messages=[...])
 ```
 
 ---
@@ -138,6 +143,13 @@ for msg in result.messages:
 | SystemMessagePromptTemplate | 系统消息，设置 AI 角色/行为 |
 | HumanMessagePromptTemplate | 用户消息，用户的提问 |
 | AIMessagePromptTemplate | AI 消息，预设 AI 回复 |
+
+### format() vs invoke() 区别
+
+| 方法 | 返回类型 | 适用场景 |
+|------|---------|---------|
+| `prompt.format(role="...", question="...")` | `str` 字符串 | 直接获取格式化后的文本 |
+| `prompt.invoke({"role": "...", "question": "..."})` | `ChatPromptValue` 对象 | LCEL 链式调用，有 `.messages` 属性 |
 
 ### 组合多个消息
 - 使用 `ChatPromptTemplate.from_messages()` 组合

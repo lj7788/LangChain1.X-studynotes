@@ -111,6 +111,20 @@ result = chain.invoke({"question": "你好"})
 - 支持多种开源大模型
 - 访问地址: https://ai.gitee.com
 
+### ⚠️ Gitee AI 兼容性问题
+
+在使用 Gitee AI 时，可能会遇到以下错误：
+
+```
+openai.BadRequestError: Error code: 400 - {'error': {'message': "[Bad Request] Validation error for body application/json: input don't match type STRING"}}
+```
+
+**原因：** Gitee AI API 主要支持聊天接口（Chat API），传统 Completions 接口可能不完全兼容。
+
+**解决方案：**
+- 使用 `ChatOpenAI` 而非 `OpenAI`
+- 传入消息列表格式 `[HumanMessage(content="...")]` 而非纯字符串
+
 ### 注意事项
 - API 密钥已硬编码，存在安全风险
 - 生产环境应使用环境变量

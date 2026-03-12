@@ -7,7 +7,7 @@
 ## 完整代码
 
 ```python
-from langchain.chains import TransformChain
+from langchain_core.runnables import RunnableLambda
 from langchain_core.runnables import RunnableLambda
 
 def transform_func(inputs):
@@ -32,7 +32,7 @@ print("原文:", result["original_text"])
 
 ### 第 1 行：导入 TransformChain
 ```python
-from langchain.chains import TransformChain
+from langchain_core.runnables import RunnableLambda
 ```
 - **TransformChain**: 用于数据转换的链
 

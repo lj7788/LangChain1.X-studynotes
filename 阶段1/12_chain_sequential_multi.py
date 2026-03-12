@@ -1,29 +1,24 @@
-from langchain.chains import SequentialChain
-from langchain_openai import ChatOpenAI
+from tools import make_model
 from langchain_core.prompts import ChatPromptTemplate
+from langchain_core.runnables import RunnableParallel
+from langchain_core.output_parsers import StrOutputParser
 
-model = ChatOpenAI(
-    model="Qwen/Qwen2.5-7B-Instruct",
-    temperature=0,
-    base_url="https://ai.gitee.com/v1",
-    api_key="your-gitee-ai-api-key"
-)
+output_parser = StrOutputParser()
+model = make_model()
 
 chain1_prompt = ChatPromptTemplate.from_template(
     "将以下内容翻译成英文: {text}"
 )
-chain1 = chain1_prompt | model
+chain1 = chain1_prompt | model | output_parser
 
 chain2_prompt = ChatPromptTemplate.from_template(
     "将以下内容翻译成法语: {text}"
 )
-chain2 = chain2_prompt | model
+chain2 = chain2_prompt | model | output_parser
 
-overall_chain = SequentialChain(
-    chains=[chain1, chain2],
-    input_variables=["text"],
-    output_variables=["english_text", "french_text"],
-    verbose=True
+overall_chain = RunnableParallel(
+    english_text=chain1,
+    french_text=chain2
 )
 
 result = overall_chain.invoke({"text": "LangChain 是一个 LLM 应用框架"})

@@ -8,11 +8,12 @@ human_prompt = HumanMessagePromptTemplate.from_template("{question}")
 
 prompt = ChatPromptTemplate.from_messages([system_prompt, human_prompt])
 
-result = prompt.format(
-    role="技术专家",
-    tone="专业",
-    question="什么是 LangChain?"
-)
+result = prompt.invoke({
+    "role":"技术专家",
+    "tone":"专业",
+    "question":"什么是 LangChain?"
+})
+
 print("格式化后的提示词:")
 for msg in result.messages:
     print(f"- {msg.type}: {msg.content}")

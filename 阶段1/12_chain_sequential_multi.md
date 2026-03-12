@@ -1,4 +1,4 @@
-# 顺序链 - SequentialChain (多输入多输出)
+# 并行链 - RunnableParallel
 
 本文档解释 `/Volumes/data/code/me/2026/03/longchat01/阶段1/12_chain_sequential_multi.py` 中的代码。
 
@@ -7,32 +7,27 @@
 ## 完整代码
 
 ```python
-from langchain.chains import SequentialChain
-from langchain_openai import ChatOpenAI
+from tools import make_model
 from langchain_core.prompts import ChatPromptTemplate
+from langchain_core.runnables import RunnableParallel
+from langchain_core.output_parsers import StrOutputParser
 
-model = ChatOpenAI(
-    model="Qwen/Qwen2.5-7B-Instruct",
-    temperature=0,
-    base_url="https://ai.gitee.io/v1",
-    api_key="your-gitee-ai-api-key"
-)
+output_parser = StrOutputParser()
+model = make_model()
 
 chain1_prompt = ChatPromptTemplate.from_template(
     "将以下内容翻译成英文: {text}"
 )
-chain1 = chain1_prompt | model
+chain1 = chain1_prompt | model | output_parser
 
 chain2_prompt = ChatPromptTemplate.from_template(
     "将以下内容翻译成法语: {text}"
 )
-chain2 = chain2_prompt | model
+chain2 = chain2_prompt | model | output_parser
 
-overall_chain = SequentialChain(
-    chains=[chain1, chain2],
-    input_variables=["text"],
-    output_variables=["english_text", "french_text"],
-    verbose=True
+overall_chain = RunnableParallel(
+    english_text=chain1,
+    french_text=chain2
 )
 
 result = overall_chain.invoke({"text": "LangChain 是一个 LLM 应用框架"})
@@ -44,65 +39,76 @@ print("法语:", result["french_text"])
 
 ## 代码逐行解析
 
-### 第 1 行：导入 SequentialChain
+### 第 1 行：导入工具函数
 ```python
-from langchain.chains import SequentialChain
+from tools import make_model
 ```
-- **SequentialChain**: 顺序链，支持多个输入和输出
+- 使用 `tools.py` 中的 `make_model` 函数创建模型
 
 ---
 
-### 第 2-3 行：导入模型和提示词
+### 第 2-4 行：导入 LCEL 组件
 ```python
-from langchain_openai import ChatOpenAI
 from langchain_core.prompts import ChatPromptTemplate
+from langchain_core.runnables import RunnableParallel
+from langchain_core.output_parsers import StrOutputParser
 ```
+- `ChatPromptTemplate`: 提示词模板
+- `RunnableParallel`: 并行执行多个链
+- `StrOutputParser`: 将输出解析为字符串
 
 ---
 
-### 第 5-10 行：创建模型实例
+### 第 6 行：创建输出解析器
 ```python
-model = ChatOpenAI(...)
+output_parser = StrOutputParser()
+```
+- 将 `AIMessage` 对象转换为字符串
+
+---
+
+### 第 8 行：创建模型实例
+```python
+model = make_model()
 ```
 
 ---
 
-### 第 12-14 行：创建第一条链（英文翻译）
+### 第 10-12 行：创建第一条链（英文翻译）
 ```python
 chain1_prompt = ChatPromptTemplate.from_template(
     "将以下内容翻译成英文: {text}"
 )
-chain1 = chain1_prompt | model
+chain1 = chain1_prompt | model | output_parser
 ```
+- 提示词 → 模型 → 输出解析器
+- 最终输出字符串
 
 ---
 
-### 第 16-18 行：创建第二条链（法语翻译）
+### 第 14-16 行：创建第二条链（法语翻译）
 ```python
 chain2_prompt = ChatPromptTemplate.from_template(
     "将以下内容翻译成法语: {text}"
 )
-chain2 = chain2_prompt | model
+chain2 = chain2_prompt | model | output_parser
 ```
 
 ---
 
-### 第 20-25 行：创建顺序链
+### 第 18-21 行：创建并行链
 ```python
-overall_chain = SequentialChain(
-    chains=[chain1, chain2],
-    input_variables=["text"],
-    output_variables=["english_text", "french_text"],
-    verbose=True
+overall_chain = RunnableParallel(
+    english_text=chain1,
+    french_text=chain2
 )
 ```
-- `chains`: 子链列表
-- `input_variables`: 输入变量列表
-- `output_variables`: 输出变量列表
+- 同时执行两条链
+- 返回字典，包含两个结果
 
 ---
 
-### 第 27-29 行：执行并输出
+### 第 23-25 行：执行链
 ```python
 result = overall_chain.invoke({"text": "LangChain 是一个 LLM 应用框架"})
 print("英文:", result["english_text"])
@@ -117,25 +123,17 @@ print("法语:", result["french_text"])
 输入: {"text": "LangChain 是一个 LLM 应用框架"}
     ↓
 ┌─────────────────────────────────────┐
-│ Chain 1: 英文翻译                    │
-│ 输入: {text}                        │
-│ "LangChain 是一个 LLM 应用框架"     │
-│ ↓                                   │
-│ "LangChain is an LLM application framework"│
-│ 输出键: english_text                │
-└─────────────────────────────────────┘
-    ↓
-┌─────────────────────────────────────┐
-│ Chain 2: 法语翻译                   │
-│ 输入: {text}                        │
-│ "LangChain 是一个 LLM 应用框架"     │
-│ ↓                                   │
-│ "LangChain est un framework d'application LLM"│
-│ 输出键: french_text                 │
+│ RunnableParallel                    │
+│                                     │
+│ ┌─────────────┐   ┌─────────────┐  │
+│ │ chain1      │   │ chain2      │  │
+│ │ 英文翻译    │   │ 法语翻译    │  │
+│ └─────────────┘   └─────────────┘  │
+│      ↓                 ↓            │
+│ English text     French text        │
 └─────────────────────────────────────┘
     ↓
 输出: {
-    "text": "...",
     "english_text": "...",
     "french_text": "..."
 }
@@ -146,16 +144,6 @@ print("法语:", result["french_text"])
 ## 输出结果
 
 ```
-> Entering new SequentialChain chain...
-> Entering new LLMChain chain...
-Prompt after formatting:
-将以下内容翻译成英文: LangChain 是一个 LLM 应用框架
-> Ending LLMChain chain...
-> Entering new LLMChain chain...
-Prompt after formatting:
-将以下内容翻译成法语: LangChain 是一个 LLM 应用框架
-> Ending LLMChain chain...
-> Ending SequentialChain chain...
 英文: LangChain is an LLM application framework.
 法语: LangChain est un framework d'application LLM.
 ```
@@ -164,28 +152,31 @@ Prompt after formatting:
 
 ## 核心概念
 
-### SequentialChain vs SimpleSequentialChain
+### RunnableParallel
+- 并行执行多个链
+- 所有链同时运行，提高效率
+- 返回字典，包含各个链的结果
 
-| 特性 | SimpleSequentialChain | SequentialChain |
-|------|----------------------|-----------------|
-| 输入输出 | 单个 | 多个 |
-| 灵活性 | 低 | 高 |
-| 配置 | 简单 | 需要指定变量 |
+### StrOutputParser
+- 将 `AIMessage` 对象转换为纯字符串
+- 简化输出处理
 
-### 关键参数
+### LCEL 管道组合
+- `prompt | model | output_parser` 组合成完整链
+- 语法简洁直观
 
-| 参数 | 说明 |
-|------|------|
-| chains | 子链列表 |
-| input_variables | 输入变量名列表 |
-| output_variables | 输出变量名列表 |
+### vs SequentialChain
 
-### 输入输出映射
-- `input_variables`: 初始输入的变量
-- `output_variables`: 最终输出的变量
-- 中间链的输出会自动传递（如果变量名匹配）
+| 特性 | SequentialChain | RunnableParallel |
+|------|-----------------|------------------|
+| 执行方式 | 顺序执行 | 并行执行 |
+| 效率 | 较低 | 高 |
+| 适用场景 | 依赖关系 | 独立任务 |
 
-### 适用场景
-- 并行生成多个结果
-- 需要保留中间结果
-- 复杂的多步骤流水线
+---
+
+## 注意事项
+
+- `RunnableParallel` 适用于相互独立的链
+- 如果链之间有依赖关系，需要使用顺序链
+- 使用 `StrOutputParser` 可以简化字符串处理

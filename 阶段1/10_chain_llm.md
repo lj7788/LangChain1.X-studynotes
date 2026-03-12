@@ -1,4 +1,4 @@
-# LLMChain 链式调用
+# LCEL 链式调用
 
 本文档解释 `/Volumes/data/code/me/2026/03/longchat01/阶段1/10_chain_llm.py` 中的代码。
 
@@ -7,54 +7,40 @@
 ## 完整代码
 
 ```python
-from langchain.chains import LLMChain
-from langchain_openai import ChatOpenAI
-from langchain_core.prompts import HumanMessagePromptTemplate, ChatPromptTemplate
+from tools import make_model
+from langchain_core.prompts import ChatPromptTemplate
 
 prompt = ChatPromptTemplate.from_template("{question}")
 
-model = ChatOpenAI(
-    model="Qwen/Qwen2.5-7B-Instruct",
-    temperature=0,
-    base_url="https://ai.gitee.io/v1",
-    api_key="your-gitee-ai-api-key"
-)
+model = make_model()
 
-chain = LLMChain(llm=model, prompt=prompt)
+chain = prompt | model
 
 result = chain.invoke({"question": "LangChain 是什么?"})
-print("回答:", result["text"])
+print("回答:", result.content)
 ```
 
 ---
 
 ## 代码逐行解析
 
-### 第 1 行：导入 LLMChain
+### 第 1 行：导入工具函数
 ```python
-from langchain.chains import LLMChain
+from tools import make_model
 ```
-- **LLMChain**: LangChain 提供的经典链式调用类
-- 将提示词模板和模型组合成链
+- 使用 `tools.py` 中的 `make_model` 函数创建模型
 
 ---
 
-### 第 2 行：导入 ChatOpenAI
+### 第 2 行：导入提示词模板
 ```python
-from langchain_openai import ChatOpenAI
+from langchain_core.prompts import ChatPromptTemplate
 ```
-- 对话模型
+- **ChatPromptTemplate**: 聊天格式的提示词模板
 
 ---
 
-### 第 3 行：导入提示词模板
-```python
-from langchain_core.prompts import HumanMessagePromptTemplate, ChatPromptTemplate
-```
-
----
-
-### 第 5 行：创建提示词模板
+### 第 4 行：创建提示词模板
 ```python
 prompt = ChatPromptTemplate.from_template("{question}")
 ```
@@ -62,34 +48,30 @@ prompt = ChatPromptTemplate.from_template("{question}")
 
 ---
 
-### 第 7-12 行：创建模型实例
+### 第 6 行：创建模型实例
 ```python
-model = ChatOpenAI(
-    model="Qwen/Qwen2.5-7B-Instruct",
-    temperature=0,
-    base_url="https://ai.gitee.io/v1",
-    api_key="your-gitee-ai-api-key"
-)
+model = make_model()
 ```
+- 使用 `make_model()` 创建 ChatOpenAI 模型
 
 ---
 
-### 第 14 行：创建 LLMChain
+### 第 8 行：创建 LCEL 链
 ```python
-chain = LLMChain(llm=model, prompt=prompt)
+chain = prompt | model
 ```
-- `llm`: 语言模型
-- `prompt`: 提示词模板
-- 组合成一条链
+- 使用 `|` 管道操作符组合提示词模板和模型
+- 这就是 LCEL（LangChain Expression Language）
 
 ---
 
-### 第 16-17 行：执行链
+### 第 10-11 行：执行链
 ```python
 result = chain.invoke({"question": "LangChain 是什么?"})
-print("回答:", result["text"])
+print("回答:", result.content)
 ```
-- `invoke` 返回字典，包含 `text` 键
+- `invoke` 返回 `AIMessage` 对象
+- 使用 `.content` 获取文本内容
 
 ---
 
@@ -98,15 +80,19 @@ print("回答:", result["text"])
 ```
 输入: {"question": "LangChain 是什么?"}
     ↓
-LLMChain
-    ↓
 ┌─────────────────────────────────────┐
-│ 1. prompt.format() → 格式化提示词   │
-│ 2. model.invoke() → 调用模型        │
-│ 3. 返回 {"question": "...", "text": "..."} │
+│ ChatPromptTemplate                  │
+│ "{question}"                        │
+│ ↓ format                            │
+│ "LangChain 是什么?"                 │
 └─────────────────────────────────────┘
     ↓
-输出: {"question": "LangChain 是什么?", "text": "LangChain 是..."}
+┌─────────────────────────────────────┐
+│ ChatOpenAI 模型                     │
+│ 返回 AIMessage 对象                 │
+└─────────────────────────────────────┘
+    ↓
+输出: AIMessage(content="...")
 ```
 
 ---
@@ -121,28 +107,11 @@ LLMChain
 
 ## 核心概念
 
-### LLMChain
-- LangChain 提供的经典链式调用类
-- 简化了提示词 + 模型的组合
-- 自动传递输入到提示词，输出到模型
+### LCEL (LangChain Expression Language)
+- 使用管道操作符 `|` 组合组件
+- 推荐的新方式，LangChain 1.x 官方推荐
+- 语法简洁，灵活性高
 
 ### 返回值
-- 返回包含所有变量的字典
-- 模型输出在 `text` 键中
-
-### vs LCEL
-
-| 特性 | LLMChain | LCEL |
-|------|---------|------|
-| 语法 | 类封装 | 管道操作符 `|` |
-| 灵活性 | 较低 | 高 |
-| 推荐 | 简单场景 | 复杂场景 |
-
-### LCEL 等价写法
-
-```python
-chain = prompt | model
-
-result = chain.invoke({"question": "LangChain 是什么?"})
-# result 是 AIMessage 对象
-```
+- 返回 `AIMessage` 对象
+- 使用 `.content` 获取文本内容

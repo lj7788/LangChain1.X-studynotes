@@ -8,7 +8,7 @@
 
 ```python
 from langchain_core.output_parsers import JsonOutputParser
-from langchain_core.pydantic_v1 import BaseModel
+from pydantic import BaseModel
 
 class Person(BaseModel):
     name: str
@@ -39,7 +39,7 @@ from langchain_core.output_parsers import JsonOutputParser
 
 ### 第 2 行：导入 BaseModel
 ```python
-from langchain_core.pydantic_v1 import BaseModel
+from pydantic import BaseModel
 ```
 - **BaseModel**: Pydantic 模型基类，用于定义数据结构
 
@@ -128,7 +128,7 @@ JsonOutputParser.invoke(pydantic_object=Person)
 
 ```python
 from langchain_core.output_parsers import JsonOutputParser
-from langchain_core.pydantic_v1 import BaseModel
+from pydantic import BaseModel
 from langchain_openai import ChatOpenAI
 from langchain_core.prompts import ChatPromptTemplate
 
@@ -152,3 +152,79 @@ print(parser.get_format_instructions())
 # The output should be formatted as a JSON instance that conforms to the JSON schema below.
 # {"properties": {"name": {"title": "name", "type": "string"}...}
 ```
+
+---
+
+## 进阶用法：LLM 结构化输出
+
+结合提示词模板和 JSON 解析器，让 LLM 输出结构化的 JSON 数据：
+
+```python
+from tools import make_model
+from pydantic import BaseModel
+from langchain_core.output_parsers import JsonOutputParser
+from langchain_core.prompts import ChatPromptTemplate
+
+class Person(BaseModel):
+    name: str
+    age: int
+    city: str
+
+parser = JsonOutputParser(pydantic_object=Person)
+
+prompt = ChatPromptTemplate.from_template(
+    "请描述一个人，名字叫张三，25岁，住在北京\n{format_instructions}"
+)
+prompt = prompt.partial(format_instructions=parser.get_format_instructions())
+
+llm = make_model()
+
+chain = prompt | llm | parser
+
+response = chain.invoke({})
+
+print("结构化输出:", response)
+print("姓名:", response.get("name"))
+print("年龄:", response.get("age"))
+print("城市:", response.get("city"))
+```
+
+### 代码解析
+
+1. **定义 Pydantic 模型**：指定期望的数据结构
+2. **创建解析器**：`JsonOutputParser(pydantic_object=Person)`
+3. **创建提示词模板**：包含 `{format_instructions}` 占位符
+4. **注入格式要求**：`prompt.partial(format_instructions=parser.get_format_instructions())`
+5. **构建 LCEL 链**：`prompt | llm | parser`
+6. **执行链**：`chain.invoke({})`
+
+### 执行流程
+
+```
+用户输入: "请描述一个人..."
+    ↓
+┌─────────────────────────────────────┐
+│ ChatPromptTemplate                  │
+│ + format_instructions               │
+│ (要求 LLM 输出 JSON 格式)            │
+└─────────────────────────────────────┘
+    ↓
+┌─────────────────────────────────────┐
+│ LLM (ChatOpenAI)                    │
+│ 返回 JSON 格式的文本                 │
+│ {"name": "张三", "age": 25, ...}    │
+└─────────────────────────────────────┘
+    ↓
+┌─────────────────────────────────────┐
+│ JsonOutputParser                     │
+│ 解析 JSON 为 Python 字典             │
+└─────────────────────────────────────┘
+    ↓
+输出: {"name": "张三", "age": 25, "city": "北京"}
+```
+
+### 注意事项
+
+- **Gitee AI 兼容性**：Gitee AI 默认可能不返回 JSON，需要使用 `get_format_instructions()` 提示 LLM
+- **JsonOutputParser 不会自动验证**：解析返回的是 dict，如需验证可用 Pydantic 模型
+- **安全访问**：使用 `response.get("key", default)` 防止访问不存在的 key

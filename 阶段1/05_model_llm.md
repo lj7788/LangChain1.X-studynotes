@@ -4,6 +4,40 @@
 
 ---
 
+## ⚠️ 常见问题说明
+
+在使用 Gitee AI API 时，可能会遇到以下错误：
+
+```
+openai.BadRequestError: Error code: 400 - {'error': {'code': '400', 'message': "[Bad Request] Validation error for body application/json: input don't match type STRING"}}
+```
+
+**原因：**
+- Gitee AI 的 API 可能只支持聊天接口（Chat API），不支持传统的 Completions 接口
+- 使用 `OpenAI` 类时传入的是字符串格式，但 Gitee AI 期望的是消息列表格式
+
+**解决方案：**
+1. 使用 `ChatOpenAI` 替代 `OpenAI`
+2. 传入消息列表格式而非纯字符串
+
+```python
+from langchain_openai import ChatOpenAI
+from langchain_core.messages import HumanMessage
+
+model = ChatOpenAI(
+    model="GLM-4.7-Flash",
+    temperature=0,
+    base_url="https://ai.gitee.com/v1",
+    api_key="your-api-key"
+)
+
+# 使用消息列表格式
+response = model.invoke([HumanMessage(content="请用一句话介绍 LangChain")])
+print("模型回复:", response.content)
+```
+
+---
+
 ## 完整代码
 
 ```python
