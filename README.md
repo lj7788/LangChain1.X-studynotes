@@ -22,6 +22,8 @@
 
 ### 2. 环境准备
 
+- 开发工具：Trae IDE (macOS)
+- 大语言模型：MiniMax-M2.5
 - Python 3.10+ 环境
 - LangChain 1.2.x 安装
 - 基础依赖：langchain-core, langchain-community
@@ -95,6 +97,33 @@ OPENAI_API_MODEL=MiniMax-M2.5
 - OpenAI Embeddings
 - 本地 Embeddings
 - 向量存储
+
+### 示例代码
+
+
+| 文件 | 内容 |
+| ---- | ---- |
+| 01_document_loader_text.py | 文本文件加载 |
+| 02_document_loader_csv.py | CSV 文件加载 |
+| 03_document_loader_json.py | JSON 文件加载 |
+| 04_document_loader_directory.py | 目录批量加载 |
+| 05_document_loader_pdf.py | PDF 文件加载 |
+| 06_document_loader_web.py | 网页加载 |
+| 07_text_splitter_character.py | 字符分割器 |
+| 08_text_splitter_recursive.py | 递归字符分割器 |
+| 09_text_splitter_markdown.py | Markdown 分割器 |
+| 10_text_splitter_python.py | Python 代码分割器 |
+| 11_text_splitter_with_metadata.py | 带元数据的文档分割 |
+| 12_embeddings_openai.py | OpenAI Embeddings |
+| 13_embeddings_huggingface.py | HuggingFace 本地 Embeddings |
+| 14_embeddings_similarity.py | Embeddings 相似度计算 |
+| 15_vectorstore_chroma.py | Chroma 向量数据库 |
+| 16_vectorstore_faiss.py | FAISS 向量数据库 |
+| 17_vectorstore_save_load.py | 向量数据库保存与加载 |
+| 18_vectorstore_mmr.py | MMR 搜索 |
+| 19_rag_pipeline.py | 完整 RAG 流程示例 |
+
+**代码位置：** `./阶段2/`
 
 ---
 
