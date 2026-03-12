@@ -1,17 +1,14 @@
 import warnings
 warnings.filterwarnings("ignore")
 
-from langchain_community.embeddings import HuggingFaceEmbeddings
+from langchain_ollama import OllamaEmbeddings
 
-print("=== HuggingFace 本地 Embeddings ===")
-print("加载模型: sentence-transformers/all-MiniLM-L6-v2")
+print("=== Ollama 本地 Embeddings ===")
+print("模型: nomic-embed-text")
 
-embeddings = HuggingFaceEmbeddings(
-    model_name="sentence-transformers/all-MiniLM-L6-v2",
-    model_kwargs={'device': 'cpu'}
+embeddings = OllamaEmbeddings(
+    model="nomic-embed-text"
 )
-
-print(f"嵌入维度: {embeddings.embedding_dim}")
 
 texts = [
     "今天天气很好",
@@ -29,4 +26,4 @@ for i, (text, embedding) in enumerate(zip(texts, results)):
 query = "今天适合出去玩吗"
 query_embedding = embeddings.embed_query(query)
 print(f"\n查询: {query}")
-print(f"查询向量前5位: {query_embedding[:5]}")
+print(f"查询向量长度: {len(query_embedding)}")

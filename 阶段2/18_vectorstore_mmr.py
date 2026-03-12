@@ -5,22 +5,19 @@ from pathlib import Path
 import sys
 sys.path.append(str(Path(__file__).parent.parent))
 
-from langchain_openai import OpenAIEmbeddings
+from langchain_ollama import OllamaEmbeddings
 import os
 from dotenv import load_dotenv
+from langchain_ollama import OllamaEmbeddings
 
 env_path = Path(__file__).parent.parent / ".env"
 load_dotenv(env_path, override=True)
 
-api_key = os.getenv("OPENAI_API_KEY")
-api_base = os.getenv("OPENAI_API_BASE")
 
-embeddings = OpenAIEmbeddings(
-    model="text-embedding-3-small",
-    api_key=api_key,
-    base_url=api_base
+
+embeddings = OllamaEmbeddings(
+    model="nomic-embed-text"
 )
-
 print("=== MMR 搜索 (最大边际相关性) ===")
 
 from langchain_community.vectorstores import FAISS
@@ -49,8 +46,8 @@ results = vectorstore.similarity_search(query, k=3)
 for i, doc in enumerate(results):
     print(f"  {i+1}. {doc.page_content}")
 
-print("\n--- MMR 搜索 (k=3, fetch_k=5) ---")
-mmr_results = vectorstore.max_marginal_relevance_search(query, k=3, fetch_k=5)
+print("\n--- MMR 搜索 (k=3, fetch_k=15) ---")
+mmr_results = vectorstore.max_marginal_relevance_search(query, k=3, fetch_k=15)
 for i, doc in enumerate(mmr_results):
     print(f"  {i+1}. {doc.page_content}")
 

@@ -5,22 +5,18 @@ from pathlib import Path
 import sys
 sys.path.append(str(Path(__file__).parent.parent))
 
-from langchain_openai import OpenAIEmbeddings
+from langchain_ollama import OllamaEmbeddings
 import os
 from dotenv import load_dotenv
+from langchain_ollama import OllamaEmbeddings
 
 env_path = Path(__file__).parent.parent / ".env"
 load_dotenv(env_path, override=True)
 
-api_key = os.getenv("OPENAI_API_KEY")
-api_base = os.getenv("OPENAI_API_BASE")
 
-embeddings = OpenAIEmbeddings(
-    model="text-embedding-3-small",
-    api_key=api_key,
-    base_url=api_base
+embeddings = OllamaEmbeddings(
+    model="nomic-embed-text"
 )
-
 print("=== FAISS 向量数据库 - 保存与加载 ===")
 
 from langchain_community.vectorstores import FAISS

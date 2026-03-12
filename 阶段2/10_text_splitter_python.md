@@ -7,7 +7,7 @@
 ## 完整代码
 
 ```python
-from langchain.text_splitter import PythonCodeTextSplitter
+from langchain_text_splitters import PythonCodeTextSplitter
 
 python_code = """
 def hello_world():

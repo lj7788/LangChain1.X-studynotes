@@ -19,7 +19,7 @@ wheels/
 *.egg-info/
 .installed.cfg
 *.egg
-
+.trae/
 # Virtual Environment
 venv/
 ENV/
@@ -39,3 +39,8 @@ Thumbs.db
 
 # Logs
 *.log
+
+# Vector Database
+faiss_index/
+chroma/
+*.vectordb

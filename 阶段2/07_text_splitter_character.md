@@ -7,7 +7,7 @@
 ## 完整代码
 
 ```python
-from langchain.text_splitter import CharacterTextSplitter
+from langchain_text_splitters import CharacterTextSplitter
 
 text = """这是一个很长的文档。
 我们可以按照字符数量进行分割。

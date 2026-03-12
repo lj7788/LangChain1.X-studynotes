@@ -1,3 +1,7 @@
+import sys
+from pathlib import Path
+sys.path.append(str(Path(__file__).parent.parent))
+
 from tools import make_model
 
 from langchain_core.output_parsers import StrOutputParser

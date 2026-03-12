@@ -1,5 +1,6 @@
 from langchain_community.document_loaders import DirectoryLoader
 from pathlib import Path
+from langchain_community.document_loaders import TextLoader
 
 data_dir = Path(__file__).parent / "data"
 data_dir.mkdir(exist_ok=True)
@@ -15,7 +16,7 @@ loader = DirectoryLoader(
     glob="*.txt",
     loader_cls=TextLoader
 )
-from langchain_community.document_loaders import TextLoader
+
 documents = loader.load()
 
 print("=== 目录加载 ===")

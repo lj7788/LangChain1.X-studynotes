@@ -7,7 +7,7 @@
 ## 完整代码
 
 ```python
-from langchain.text_splitter import RecursiveCharacterTextSplitter
+from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_core.documents import Document
 
 text = """这是第一段内容。包含了一些重要的信息。

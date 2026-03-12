@@ -114,16 +114,45 @@ OPENAI_API_MODEL=MiniMax-M2.5
 | 09_text_splitter_markdown.py | Markdown 分割器 |
 | 10_text_splitter_python.py | Python 代码分割器 |
 | 11_text_splitter_with_metadata.py | 带元数据的文档分割 |
+| 12_split_by_chapter.py | 按章节分割文档 |
 | 12_embeddings_openai.py | OpenAI Embeddings |
 | 13_embeddings_huggingface.py | HuggingFace 本地 Embeddings |
+| 13_embeddings_ollama.py | Ollama 本地 Embeddings |
 | 14_embeddings_similarity.py | Embeddings 相似度计算 |
 | 15_vectorstore_chroma.py | Chroma 向量数据库 |
 | 16_vectorstore_faiss.py | FAISS 向量数据库 |
 | 17_vectorstore_save_load.py | 向量数据库保存与加载 |
 | 18_vectorstore_mmr.py | MMR 搜索 |
 | 19_rag_pipeline.py | 完整 RAG 流程示例 |
+| 20_rag_sg.py | **三国演义 RAG 实战** |
+| 20_rag_sg_load.py | **三国演义 RAG - 加载向量数据库** |
 
 **代码位置：** `./阶段2/`
+
+### 🌟 特色示例：三国演义 RAG 实战
+
+**20_rag_sg.py** 和 **20_rag_sg_load.py` 展示了一个完整的中文 RAG 应用：
+
+- **中文嵌入模型**: 使用 `dengcao/Dmeta-embedding-zh:F16` 本地模型，无需 API Key
+- **智能文档分割**: 按章节分割《三国演义》，保留章节标题作为元数据
+- **MMR 检索**: 平衡相关性和多样性，获取更全面的上下文
+- **向量数据库持久化**: 避免重复创建，快速启动应用
+- **中文问答**: 基于检索内容回答关于《三国演义》的问题
+
+**运行方式：**
+
+```bash
+# 首次运行：创建向量数据库
+python 阶段2/20_rag_sg.py
+
+# 后续运行：直接加载向量数据库
+python 阶段2/20_rag_sg_load.py
+```
+
+**示例查询：**
+- "诸葛亮有哪些著名的计谋？"
+- "刘备三顾茅庐的故事是怎样的？"
+- "赤壁之战的经过如何？"
 
 ---
 

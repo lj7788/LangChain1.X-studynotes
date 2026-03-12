@@ -1,4 +1,4 @@
-from langchain.text_splitter import MarkdownTextSplitter
+from langchain_text_splitters import MarkdownTextSplitter
 
 markdown_text = """# 第一章
 
@@ -26,6 +26,10 @@ docs = splitter.split_text(markdown_text)
 print("=== Markdown 分割器 ===")
 print(f"原始文本长度: {len(markdown_text)}")
 print(f"分割后文档数量: {len(docs)}")
-for i, doc in enumerate(docs):
-    print(f"\n--- 块 {i+1} ---")
-    print(f"内容: {doc.page_content}")
+if len(docs) > 1:
+   
+    for i, doc in enumerate(docs):
+        print(f"\n--- 块 {i+1} ---")
+        print(f"内容: {doc.page_content}")
+else:
+    print(f"内容是：{docs}")

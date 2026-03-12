@@ -2,7 +2,7 @@ from langchain_community.document_loaders import WebBaseLoader
 import warnings
 warnings.filterwarnings("ignore")
 
-url = "https://www.example.com"
+url = "https://langchain-doc.cn/"
 
 print("=== 网页加载 ===")
 print(f"加载URL: {url}")

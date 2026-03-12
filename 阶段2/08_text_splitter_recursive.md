@@ -7,7 +7,7 @@
 ## 完整代码
 
 ```python
-from langchain.text_splitter import RecursiveCharacterTextSplitter
+from langchain_text_splitters import RecursiveCharacterTextSplitter
 
 text = """# 标题一
 这是第一段内容。这里有很多文本需要处理。

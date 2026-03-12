@@ -7,7 +7,7 @@
 ## 完整代码
 
 ```python
-from langchain.text_splitter import MarkdownTextSplitter
+from langchain_text_splitters import MarkdownTextSplitter
 
 markdown_text = """# 第一章
 

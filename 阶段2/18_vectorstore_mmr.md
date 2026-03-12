@@ -14,20 +14,10 @@ from pathlib import Path
 import sys
 sys.path.append(str(Path(__file__).parent.parent))
 
-from langchain_openai import OpenAIEmbeddings
-import os
-from dotenv import load_dotenv
+from langchain_community.embeddings import OllamaEmbeddings
 
-env_path = Path(__file__).parent.parent / ".env"
-load_dotenv(env_path, override=True)
-
-api_key = os.getenv("OPENAI_API_KEY")
-api_base = os.getenv("OPENAI_API_BASE")
-
-embeddings = OpenAIEmbeddings(
-    model="text-embedding-3-small",
-    api_key=api_key,
-    base_url=api_base
+embeddings = OllamaEmbeddings(
+    model="nomic-embed-text"
 )
 
 print("=== MMR 搜索 (最大边际相关性) ===")
@@ -68,11 +58,87 @@ print("\n说明: MMR 搜索会在相关性和多样性之间取得平衡")
 
 ---
 
-## 代码解析
+## MMR (Maximum Marginal Relevance)
 
-### MMR (Maximum Marginal Relevance)
 - 最大边际相关性搜索
-- 在相关性和多样性之间取得平衡
-- `k`: 返回的结果数量
-- `fetch_k`: 从数据库中获取的候选数量
+- 在**相关性**和**多样性**之间取得平衡
 - 避免返回过于相似的多个结果
+
+### 参数说明
+
+| 参数 | 含义 |
+|------|------|
+| `k` | 最终返回的结果数量（多样性筛选后的） |
+| `fetch_k` | 初始检索的数量（多样性筛选前的） |
+
+### 工作流程
+
+```
+查询: "天气怎么样"
+
+Step 1: fetch_k=5
+先从数据库检索出 5 个最相似的：
+  1. 天气变化很快，要随时关注天气预报  ← 相似度最高
+  2. 天气晴朗，适合外出活动
+  3. 今天天气很好，阳光明媚
+  4. 天气...
+  5. ...
+
+Step 2: k=3
+从这 5 个中筛选出 3 个最多样的：
+  1. 天气变化很快，要随时关注天气预报
+  2. 天气晴朗，适合外出活动
+  3. 我喜欢吃苹果和香蕉    ← 跳过了相似的，选了不同的
+```
+
+---
+
+## MMR vs 普通搜索
+
+| 搜索方式 | 特点 | 场景 |
+|---------|------|------|
+| **普通相似度搜索** | 只看相似度，可能返回重复/冗余的结果 | 简单场景 |
+| **MMR 搜索** | 同时考虑相似度+多样性，返回结果更丰富 | 需要多样化结果的场景 |
+
+### 结果对比
+
+```
+查询: '天气怎么样'
+
+--- 标准相似度搜索 (k=3) ---
+  1. 天气变化很快，要随时关注天气预报
+  2. 天气晴朗，适合外出活动
+  3. 今天天气很好，阳光明媚
+     ↑ 都是关于天气的，有重复
+
+--- MMR 搜索 (k=3, fetch_k=5) ---
+  1. 天气变化很快，要随时关注天气预报
+  2. 天气晴朗，适合外出活动
+  3. 我喜欢吃苹果和香蕉    ← 换话题了！
+     ↑ 增加了多样性
+```
+
+---
+
+## 实际项目用哪种？
+
+**90% 用普通相似度搜索**
+
+| 场景 | 推荐方式 |
+|------|---------|
+| **RAG 问答** | 普通搜索 ✅ |
+| **文档问答** | 普通搜索 ✅ |
+| **代码问答** | 普通搜索 ✅ |
+| **多样化推荐** | MMR |
+
+### 为什么普通搜索更常用？
+
+1. **RAG 场景**：需要精确答案，不需要多样性
+2. **简单高效**：计算量小，速度快
+3. **LLM 有上下文理解**：即使相似结果有少量重复，LLM 也能处理
+
+### 什么时候用 MMR？
+
+- 推荐系统（需要多样化）
+- 创意生成（需要不同角度）
+- 探索性搜索（不想只看单一答案）

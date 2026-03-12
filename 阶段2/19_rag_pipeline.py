@@ -6,22 +6,23 @@ import sys
 sys.path.append(str(Path(__file__).parent.parent))
 
 from langchain_community.document_loaders import TextLoader
-from langchain.text_splitter import RecursiveCharacterTextSplitter
-from langchain_openai import OpenAIEmbeddings
+from langchain_text_splitters import RecursiveCharacterTextSplitter
+from langchain_ollama import OllamaEmbeddings
 from langchain_community.vectorstores import FAISS
 import os
 from dotenv import load_dotenv
+from langchain_ollama import OllamaEmbeddings
+
+
 
 env_path = Path(__file__).parent.parent / ".env"
 load_dotenv(env_path, override=True)
 
-api_key = os.getenv("OPENAI_API_KEY")
-api_base = os.getenv("OPENAI_API_BASE")
 
-embeddings = OpenAIEmbeddings(
-    model="text-embedding-3-small",
-    api_key=api_key,
-    base_url=api_base
+
+
+embeddings = OllamaEmbeddings(
+    model="nomic-embed-text"
 )
 
 print("=== 完整 RAG 流程示例 ===")
@@ -64,7 +65,7 @@ vectorstore = FAISS.from_documents(
     documents=splits,
     embedding=embeddings
 )
-print(f"   向量数据库创建成功，包含 {vectorstore._collection.count()} 个文档")
+print(f"   向量数据库创建成功，包含 {vectorstore.index.ntotal} 个文档")
 
 print("\n4. 相似度搜索...")
 query = "LangChain 可以做什么？"
@@ -75,7 +76,7 @@ for i, doc in enumerate(results):
     print(f"   {i+1}. {doc.page_content}")
 
 print("\n5. 基于检索的问答...")
-from 阶段1.tools import make_model
+from tools import make_model
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.runnables import RunnablePassthrough
 from langchain_core.output_parsers import StrOutputParser

@@ -13,7 +13,7 @@ warnings.filterwarnings("ignore")
 from pathlib import Path
 import sys
 sys.path.append(str(Path(__file__).parent.parent))
-from 阶段1.tools import make_model
+from tools import make_model
 
 from langchain_openai import OpenAIEmbeddings
 import os

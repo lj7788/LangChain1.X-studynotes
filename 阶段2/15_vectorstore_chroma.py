@@ -5,20 +5,10 @@ from pathlib import Path
 import sys
 sys.path.append(str(Path(__file__).parent.parent))
 
-from langchain_openai import OpenAIEmbeddings
-import os
-from dotenv import load_dotenv
+from langchain_ollama import OllamaEmbeddings
 
-env_path = Path(__file__).parent.parent / ".env"
-load_dotenv(env_path, override=True)
-
-api_key = os.getenv("OPENAI_API_KEY")
-api_base = os.getenv("OPENAI_API_BASE")
-
-embeddings = OpenAIEmbeddings(
-    model="text-embedding-3-small",
-    api_key=api_key,
-    base_url=api_base
+embeddings = OllamaEmbeddings(
+    model="nomic-embed-text"
 )
 
 print("=== Chroma 向量数据库 ===")
@@ -36,6 +26,7 @@ texts = [
 
 print(f"加载 {len(texts)} 个文本到向量数据库...")
 
+# 创建 Chroma 向量数据库
 vectorstore = Chroma.from_texts(
     texts=texts,
     embedding=embeddings,
@@ -47,7 +38,7 @@ print(f"向量数据库包含 {vectorstore._collection.count()} 个文档")
 query = "今天适合出去玩吗"
 print(f"\n查询: '{query}'")
 
-results = vectorstore.similarity_search(query, k=2)
+results = vectorstore.similarity_search(query, k=2) # 相似度搜索
 print(f"\nTop 2 相似结果:")
 for i, doc in enumerate(results):
     print(f"\n--- 结果 {i+1} ---")
