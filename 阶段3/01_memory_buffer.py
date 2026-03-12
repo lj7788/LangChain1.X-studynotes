@@ -8,7 +8,7 @@ LangChain 1.x 推荐使用 ChatMessageHistory 配合 RunnableWithMessageHistory 
 
 
 import sys
-sys.path.append("/Volumes/data/code/me/2026/03/LangChain1.X-")
+sys.path.append("../")
 from tools import make_ollama
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain_core.runnables.history import RunnableWithMessageHistory

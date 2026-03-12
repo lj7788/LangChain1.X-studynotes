@@ -1,75 +1,117 @@
 """
 阶段3 - 02_memory_summary.py
-Memory - ConversationSummaryMemory 对话摘要
-
-ConversationSummaryMemory 使用 LLM 生成对话摘要，适合长对话场景。
+Memory - 对话摘要记忆（LangChain 1.2.11 新版 API）
+完全消除弃用警告，使用官方推荐方案
 """
-
-from langchain_community.memory import ConversationSummaryMemory
-from langchain_core.prompts import PromptTemplate
 import sys
-sys.path.append("/Volumes/data/code/me/2026/03/LangChain1.X-")
-from tools import make_model
+sys.path.append("../")
+from tools import make_ollama
 
-llm = make_model()
+# ========== 新版 API 导入 ==========
+from langchain_core.prompts import PromptTemplate
+from langchain_core.runnables import RunnablePassthrough
+from langchain_core.output_parsers import StrOutputParser
+from langchain_core.chat_history import BaseChatMessageHistory
+from langchain_community.chat_message_histories import ChatMessageHistory
 
-memory = ConversationSummaryMemory(
-    llm=llm,
-    memory_key="chat_history",
-    return_messages=True
-)
+# 1. 初始化LLM
+llm = make_ollama()
 
+# 2. 会话历史存储（新版核心）
+store = {}
+def get_session_history(session_id: str = "default") -> BaseChatMessageHistory:
+    """获取/创建会话历史"""
+    if session_id not in store:
+        store[session_id] = ChatMessageHistory()
+    return store[session_id]
+
+# 3. 自定义摘要生成函数（替代旧版 ConversationSummaryMemory）
+def generate_summary(history: BaseChatMessageHistory) -> str:
+    """生成对话历史的简洁摘要"""
+    if not history.messages:
+        return "暂无对话历史"
+    
+    # 拼接原始对话
+    msg_text = "\n".join([
+        f"用户: {msg.content}" if msg.type == "human" else f"助手: {msg.content}"
+        for msg in history.messages
+    ])
+    
+    # 摘要Prompt
+    summary_prompt = PromptTemplate.from_template("""
+    请简洁总结以下对话，保留用户的关键信息（姓名、职业、喜好等）：
+    {messages}
+    总结：
+    """)
+    
+    # 生成摘要
+    summary_chain = summary_prompt | llm | StrOutputParser()
+    return summary_chain.invoke({"messages": msg_text}).strip()
+
+# 4. 对话Prompt（使用摘要）
 prompt = PromptTemplate.from_template(
-    """你是一个友好的助手。请根据对话历史回答用户的问题。
+    """你是一个友好的助手。请根据对话摘要回答用户问题。
 
-对话历史:
-{chat_history}
+对话摘要:
+{chat_summary}
 
 用户问题: {question}
 
 回答:"""
 )
 
-chain = prompt | llm
+# 5. 加载摘要的函数
+def load_summary(inputs):
+    history = get_session_history(inputs.get("session_id", "default"))
+    return {
+        "chat_summary": generate_summary(history),
+        "question": inputs["question"]
+    }
+
+# 6. 构建对话链
+chain = (
+    RunnablePassthrough.assign(chat_summary=load_summary)
+    | prompt
+    | llm
+    | StrOutputParser()
+)
+
+# 7. 对话函数（保存历史 + 生成回复）
+def chat_with_summary(question, session_id="default"):
+    # 获取回复
+    response = chain.invoke({"question": question, "session_id": session_id})
+    # 保存对话到历史
+    history = get_session_history(session_id)
+    history.add_user_message(question)
+    history.add_ai_message(response)
+    # 返回回复和当前摘要
+    return response, generate_summary(history)
+
+# ========== 测试逻辑 ==========
+SESSION_ID = "test_chat"
 
 print("=== 对话 1 ===")
-question1 = "我叫张三，是一名软件工程师。我喜欢编程和读书。"
-response1 = chain.invoke(
-    {"question": question1}, 
-    config={"memory": memory}
-)
-print(f"用户: {question1}")
-print(f"助手: {response1.content}")
+q1 = "我叫张三，是一名软件工程师。我喜欢编程和读书。"
+r1, s1 = chat_with_summary(q1, SESSION_ID)
+print(f"用户: {q1}\n助手: {r1}")
 
 print("\n=== 对话 2 ===")
-question2 = "你喜欢什么运动？我喜欢打篮球。"
-response2 = chain.invoke(
-    {"question": question2}, 
-    config={"memory": memory}
-)
-print(f"用户: {question2}")
-print(f"助手: {response2.content}")
+q2 = "你喜欢什么运动？我喜欢打篮球。"
+r2, s2 = chat_with_summary(q2, SESSION_ID)
+print(f"用户: {q2}\n助手: {r2}")
 
 print("\n=== 查看摘要记忆 ===")
-print(f"记忆内容:\n{memory.buffer}")
+print(f"记忆内容:\n{s2}")
 
 print("\n=== 对话 3 ===")
-question3 = "总结一下我告诉你的关于我自己的信息"
-response3 = chain.invoke(
-    {"question": question3}, 
-    config={"memory": memory}
-)
-print(f"用户: {question3}")
-print(f"助手: {response3.content}")
+q3 = "总结一下我告诉你的关于我自己的信息"
+r3, s3 = chat_with_summary(q3, SESSION_ID)
+print(f"用户: {q3}\n助手: {r3}")
 
 print("\n=== 查看更新后的摘要 ===")
-print(f"记忆内容:\n{memory.buffer}")
+print(f"记忆内容:\n{s3}")
 
 print("\n=== 对话 4 ===")
-question4 = "我是谁？喜欢什么？"
-response4 = chain.invoke(
-    {"question": question4}, 
-    config={"memory": memory}
-)
-print(f"用户: {question4}")
-print(f"助手: {response4.content}")
+q4 = "我是谁？喜欢什么？"
+r4, s4 = chat_with_summary(q4, SESSION_ID)
+print(f"用户: {q4}\n助手: {r4}")

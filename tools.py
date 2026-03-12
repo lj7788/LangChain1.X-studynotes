@@ -37,7 +37,7 @@ def make_openai(model_name: str = None):
 
 def make_ollama(model_name: str = None):
     if model_name is None:
-        model_name = "llama3.1-fast"
+        model_name = "llama3.1:8b"
     return ChatOpenAI(
         model=model_name,
         temperature=0,
