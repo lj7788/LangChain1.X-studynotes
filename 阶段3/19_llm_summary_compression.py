@@ -129,7 +129,7 @@ else:
     print("\n摘要索引已保存到: faiss_summaries")
 
 
-def search_with_summary(query, k=2):
+def search_with_summary(query, k=10):
     """基于摘要检索：先找摘要，再返回完整内容"""
     summary_results = summary_vectorstore.similarity_search(query, k=k)
 
