@@ -4,30 +4,23 @@
 
 `MultiQueryRetriever` 使用 LLM 为每个查询生成多个变体，然后从所有变体的检索结果中合并去重，提高检索的召回率。
 
-## 核心概念
+## 核心特性
 
-### 为什么需要多查询检索？
+- **查询扩展**: 自动生成多个语义相似的查询
+- **召回率提升**: 从不同角度检索，增加找到相关文档的概率
+- **去重合并**: 自动合并重复的检索结果
 
-1. **查询表达多样性**: 用户用不同的方式表达同一个查询
-2. **语义匹配差异**: 不同的查询可能有不同的语义匹配
-3. **检索盲区**: 某些关键词可能不在相关文档中
+## 关键组件
 
-### 工作原理
+### MultiQueryRetriever
 
-```
-原始查询: "深度学习框架有哪些？"
-          ↓
-    LLM 生成变体
-          ↓
-查询1: "深度学习框架有哪些？"
-查询2: "常用的深度学习框架是什么？"
-查询3: "主流的深度学习库有哪些？"
-          ↓
-    分别检索文档
-          ↓
-    合并去重
-          ↓
-返回最终结果
+```python
+from langchain_classic.retrievers.multi_query import MultiQueryRetriever
+
+retriever = MultiQueryRetriever.from_llm(
+    retriever=base_retriever,
+    llm=llm
+)
 ```
 
 ## 关键参数
@@ -36,29 +29,6 @@
 |------|------|
 | retriever | 基础检索器 |
 | llm | 用于生成查询变体的 LLM |
-| prompt | 自定义生成查询的提示词 |
-
-## 自定义提示词
-
-```python
-from langchain.prompts import PromptTemplate
-
-QUERY_PROMPT = PromptTemplate(
-    input_variables=["question"],
-    template="""你是一个AI助手。你的任务是对于给定的用户问题，生成3个不同的版本。
-    目的是为了从向量数据库中检索相关文档。通过生成多个版本的查询，可以增加找到相关文档的可能性。
-    
-    原问题: {question}
-    
-    生成3个不同的查询版本，用换行分隔:"""
-)
-
-multi_query_retriever = MultiQueryRetriever.from_llm(
-    retriever=base_retriever,
-    llm=llm,
-    prompt=QUERY_PROMPT
-)
-```
 
 ## 运行示例
 
@@ -69,23 +39,18 @@ python 阶段3/07_retrieval_multi_query.py
 ## 输出示例
 
 ```
-=== 基础检索 ===
+=== MultiQueryRetriever 多查询检索器 ===
 
-查询: 深度学习框架有哪些？
+原始查询: 深度学习在哪些领域有应用？
 
-文档 1: 深度学习是机器学习的一个分支，它使用多层神经网络来学习... (来源: deep_learning)
-文档 2: PyTorch 是一个开源的深度学习框架，由 Facebook 开发... (来源: pytorch)
+--- 基础检索结果 ---
+文档 1: 深度学习是机器学习的一个分支，它使用多层神经网络...
+来源: deep_learning
 
-=== MultiQueryRetriever 检索 ===
+--- MultiQuery 检索结果 ---
+文档 1: 深度学习是机器学习的一个分支，它使用多层神经网络...
+来源: deep_learning
 
-查询: 深度学习框架有哪些？
-返回的文档数量: 3
-
-文档 1: 深度学习是机器学习的一个分支，它使用多层神经网络来学习... (来源: deep_learning)
-文档 2: PyTorch 是一个开源的深度学习框架，由 Facebook 开发... (来源: pytorch)
-文档 3: 常见的深度学习框架包括 TensorFlow、PyTorch 和 Keras... (来源: deep_learning)
-
-=== 查看生成的查询变体 ===
-MultiQueryRetriever 会为原始查询生成多个变体，
-例如: '深度学习框架有哪些？' -> ['深度学习框架有哪些？', '常用的深度学习框架是什么？', '主流的深度学习库有哪些？']
+文档 2: Python 是一种广泛用于数据科学和机器学习的编程语言...
+来源: python_ml
 ```

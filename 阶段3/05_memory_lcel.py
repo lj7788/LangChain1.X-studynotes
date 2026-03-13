@@ -1,105 +1,98 @@
 """
 阶段3 - 05_memory_lcel.py
-Memory - 在LCEL链中使用Memory
+Memory - 在LCEL链中使用Memory（LangChain 0.3+ 新版 API）
 
 展示如何在 LCEL (LangChain Expression Language) 中使用 Memory。
+使用 ChatMessageHistory + RunnableWithMessageHistory。
 """
 
-from langchain_community.memory import ConversationBufferMemory
-from langchain.prompts import PromptTemplate
-from langchain.schema import HumanMessage
 import sys
-sys.path.append("/Volumes/data/code/me/2026/03/LangChain1.X-")
-from tools import make_model
+sys.path.append("../")
+from tools import make_ollama
+from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
+from langchain_core.runnables.history import RunnableWithMessageHistory
+from langchain_community.chat_message_histories import ChatMessageHistory
+from langchain_core.messages import HumanMessage, AIMessage, SystemMessage
 
-llm = make_model()
+llm = make_ollama()
 
-memory = ConversationBufferMemory(
-    memory_key="chat_history",
-    return_messages=True
+store = {}
+
+
+def get_session_history(session_id: str):
+    if session_id not in store:
+        store[session_id] = ChatMessageHistory()
+    return store[session_id]
+
+
+prompt = ChatPromptTemplate.from_messages([
+    SystemMessage(content="你是一个友好的助手。"),
+    MessagesPlaceholder(variable_name="history"),
+    HumanMessage(content="{question}")
+])
+
+conversation = RunnableWithMessageHistory(
+    prompt | llm,
+    get_session_history,
+    input_messages_key="question",
+    history_messages_key="history"
 )
-
-prompt = PromptTemplate.from_template(
-    """你是一个友好的助手。请根据对话历史回答用户的问题。
-
-对话历史:
-{chat_history}
-
-用户问题: {question}
-
-回答:"""
-)
-
-chain = prompt | llm
 
 print("=== LCEL + Memory 对话示例 ===\n")
 
 print("--- 对话 1 ---")
-question1 = "你好，我叫李明"
-inputs1 = {"question": question1}
-output1 = chain.invoke(inputs1, config={"memory": memory})
-print(f"用户: {question1}")
-print(f"助手: {output1.content}")
-
-print("\n--- 对话 2 ---")
-question2 = "我刚才告诉你我的名字是什么？"
-inputs2 = {"question": question2}
-output2 = chain.invoke(inputs2, config={"memory": memory})
-print(f"用户: {question2}")
-print(f"助手: {output2.content}")
-
-print("\n--- 对话 3 ---")
-question3 = "你知道我喜欢什么吗？"
-inputs3 = {"question": question3}
-output3 = chain.invoke(inputs3, config={"memory": memory})
-print(f"用户: {question3}")
-print(f"助手: {output3.content}")
-
-print("\n=== 使用 RunnableWithMessageHistory ===")
-print("使用 RunnableWithMessageHistory 实现更方便的记忆管理\n")
-
-from langchain.runnables.history import RunnableWithMessageHistory
-
-chat_prompt = PromptTemplate.from_template(
-    """你是一个友好的助手。请根据对话历史回答用户的问题。
-
-对话历史:
-{chat_history}
-
-当前问题: {question}
-
-回答:"""
+response1 = conversation.invoke(
+    {"question": "你好，我叫李明"},
+    config={"configurable": {"session_id": "session_001"}}
 )
-
-chat_chain = chat_prompt | llm
-
-chat_with_history = RunnableWithMessageHistory(
-    chat_chain,
-    lambda session_id: memory,
-    input_messages_key="question",
-    history_messages_key="chat_history"
-)
-
-print("--- 会话 1 ---")
-response1 = chat_with_history.invoke(
-    {"question": "我叫王芳，是一名教师"},
-    config={"configurable": {"session_id": "user_001"}}
-)
-print(f"用户: 我叫王芳，是一名教师")
+print(f"用户: 你好，我叫李明")
 print(f"助手: {response1.content}")
 
-print("\n--- 会话 2（同一会话）---")
-response2 = chat_with_history.invoke(
-    {"question": "我是谁？"},
-    config={"configurable": {"session_id": "user_001"}}
+print("\n--- 对话 2 ---")
+response2 = conversation.invoke(
+    {"question": "我刚才告诉你我的名字是什么？"},
+    config={"configurable": {"session_id": "session_001"}}
 )
-print(f"用户: 我是谁？")
+print(f"用户: 我刚才告诉你我的名字是什么？")
 print(f"助手: {response2.content}")
 
-print("\n--- 会话 3（新会话，无历史）---")
-response3 = chat_with_history.invoke(
+print("\n--- 对话 3 ---")
+response3 = conversation.invoke(
+    {"question": "你知道我喜欢什么吗？"},
+    config={"configurable": {"session_id": "session_001"}}
+)
+print(f"用户: 你知道我喜欢什么吗？")
+print(f"助手: {response3.content}")
+
+print("\n=== 另一个会话（新用户）===\n")
+
+print("--- 会话 A ---")
+responseA = conversation.invoke(
+    {"question": "我叫王芳，是一名教师"},
+    config={"configurable": {"session_id": "session_002"}}
+)
+print(f"用户: 我叫王芳，是一名教师")
+print(f"助手: {responseA.content}")
+
+print("\n--- 会话 B（同一会话）---")
+responseB = conversation.invoke(
     {"question": "我是谁？"},
-    config={"configurable": {"session_id": "user_002"}}
+    config={"configurable": {"session_id": "session_002"}}
 )
 print(f"用户: 我是谁？")
-print(f"助手: {response3.content}")
+print(f"助手: {responseB.content}")
+
+print("\n--- 会话 C（新会话，无历史）---")
+responseC = conversation.invoke(
+    {"question": "还记得我叫什么吗？"},
+    config={"configurable": {"session_id": "session_003"}}
+)
+print(f"用户: 还记得我叫什么吗？")
+print(f"助手: {responseC.content}")
+
+print("\n=== 查看所有会话历史 ===")
+for session_id, history in store.items():
+    print(f"\n会话 {session_id}:")
+    for msg in history.messages:
+        role = "用户" if msg.type == "human" else "助手"
+        print(f"  {role}: {msg.content[:50]}...")

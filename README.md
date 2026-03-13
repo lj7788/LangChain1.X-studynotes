@@ -158,35 +158,80 @@ python 阶段2/20_rag_sg_load.py
 
 ## 阶段三：记忆与检索（第5-6周）
 
-### 1. Memory
+### 1. Memory (LangChain 1.x 核心组件)
 
-- ConversationBufferMemory: 完整的对话历史
-- ConversationSummaryMemory: 对话摘要，减少 token 消耗
-- EntityMemory: 实体记忆，自动提取关键实体
-- 持久化记忆: 保存和加载对话历史
+#### 1.1 对话记忆（基础核心）
 
-### 2. Retrieval
+| 组件名 | 核心作用 | 1.x 版本关键特性 |
+|--------|----------|------------------|
+| **ConversationBufferMemory** | 存储完整对话历史（无截断） | 支持异步 async_save_context、自定义消息序列化 |
+| **ConversationBufferWindowMemory** | 保留最近 k 轮对话 | 支持 return_messages 直接返回消息对象 |
+| **ConversationSummaryMemory** | LLM 总结对话历史（压缩 Token） | 支持自定义总结模板、多语言总结 |
+| **ConversationTokenBufferMemory** | 按 Token 数截断对话 | 适配 OpenAI/Anthropic 等多模型 Token 计算 |
+| **ConversationSummaryBufferMemory** | 混合"窗口+总结"（优先窗口，超长则总结） | 1.x 主推的长对话记忆方案 |
 
-- ContextualCompression: 上下文压缩检索
-- MultiQueryRetriever: 多查询检索
-- EnsembleRetriever: 集成检索
-- TimeWeightedRetriever: 时间加权检索
-- 自定义 Retriever: 根据业务需求定制
+#### 1.2 实体/结构化记忆（进阶）
+
+| 组件名 | 核心作用 | 1.x 版本升级点 |
+|--------|----------|----------------|
+| **EntityMemory** | 提取/记忆对话中的实体 | 优化实体提取准确率，支持自定义实体类型 |
+| **KnowledgeGraphMemory** | 构建实体关系图谱 | 支持 Neo4j 等外部图谱数据库持久化 |
+| **VectorStoreRetrieverMemory** | 向量库存储记忆 | 适配 1.x 新的 VectorStore 接口 |
+
+#### 1.3 持久化记忆（生产级）
+
+| 组件名 | 核心作用 | 适用场景 |
+|--------|----------|----------|
+| **FileChatMessageHistory** | 对话历史存储到本地文件 | 单机持久化 |
+| **RedisChatMessageHistory** | 对话历史存储到 Redis | 分布式/多实例场景 |
+| **PostgresChatMessageHistory** | 对话历史存储到 PostgreSQL | 企业级持久化 |
+| **MongoDBChatMessageHistory** | 对话历史存储到 MongoDB | 文档型数据库场景 |
+
+### 2. Retrieval (LangChain 1.x 核心组件)
+
+#### 2.1 核心检索器（Retriever）
+
+| 组件名 | 核心作用 | 1.x 版本关键特性 |
+|--------|----------|------------------|
+| **VectorStoreRetriever** | 向量库相似度检索（RAG 核心） | 支持异步检索、批量检索、过滤条件优化 |
+| **BM25Retriever** | 关键词/TF-IDF 检索 | 适配 1.x 新的 Document 格式 |
+| **ParentDocumentRetriever** | 小片段检索+完整文档关联 | 支持多粒度分割 |
+| **EnsembleRetriever** | 组合多个检索器 | 支持权重配置、结果融合策略 |
+| **MultiQueryRetriever** | 生成多检索词提升召回率 | 支持自定义提示模板 |
+
+#### 2.2 高级检索器
+
+| 组件名 | 核心作用 | 适用场景 |
+|--------|----------|----------|
+| **SelfQueryRetriever** | 自然语言转检索条件 | 结构化元数据检索 |
+| **ContextualCompressionRetriever** | 检索结果压缩 | 减少 Token 消耗 |
+| **TimeWeightedVectorStoreRetriever** | 按时间权重检索 | 时序数据检索 |
+| **MultiModalRetriever** | 多模态检索 | 图文混合检索场景 |
+
+#### 2.3 RAG 检索套件
+
+- `create_retrieval_chain`：快速构建检索→生成链路
+- `create_stuff_documents_chain`：将检索结果直接传入 LLM
+- `create_map_reduce_documents_chain`：分块总结→合并结果
 
 ### 示例代码
 
 | 文件 | 内容 |
 | ---- | ---- |
-| 01_memory_buffer.py | ConversationBufferMemory 基础 |
+| 01_memory_buffer.py | ChatMessageHistory + RunnableWithMessageHistory |
 | 02_memory_summary.py | ConversationSummaryMemory 对话摘要 |
-| 03_memory_entity.py | EntityMemory 实体记忆 |
-| 04_memory_persist.py | 记忆的保存与加载 |
-| 05_memory_lcel.py | LCEL 中使用 Memory |
-| 06_retrieval_compression.py | ContextualCompression 上下文压缩 |
-| 07_retrieval_multi_query.py | MultiQueryRetriever 多查询检索 |
-| 08_retrieval_ensemble.py | EnsembleRetriever 集成检索 |
-| 09_retrieval_time_weighted.py | TimeWeightedRetriever 时间加权检索 |
-| 10_retrieval_custom.py | 自定义 Retriever |
+| 03_memory_persist.py | 记忆持久化 |
+| 04_memory_lcel.py | LCEL 中使用 Memory |
+| 05_memory_buffer_window.py | 窗口记忆 |
+| 06_memory_token_buffer.py | Token计数记忆 |
+| 07_memory_vectorstore.py | VectorStoreRetrieverMemory |
+| 08_memory_entity_kg.py | 手动实体关系提取 |
+| 09_retrieval_compression.py | ContextualCompressionRetriever |
+| 10_retrieval_multi_query.py | MultiQueryRetriever |
+| 11_retrieval_ensemble.py | EnsembleRetriever |
+| 12_retrieval_time_weighted.py | TimeWeightedRetriever |
+| 13_retrieval_self_query.py | SelfQueryRetriever |
+| 14_retrieval_parent_document.py | ParentDocumentRetriever |
 
 **代码位置：** `./阶段3/`
 

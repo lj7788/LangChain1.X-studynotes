@@ -1,0 +1,26 @@
+[
+  {
+    "type": "HumanMessage",
+    "content": "你好！我叫张三",
+    "additional_kwargs": {}
+  },
+  {
+    "type": "AIMessage",
+    "content": "您有什么问题或需要帮助吗？",
+    "additional_kwargs": {
+      "refusal": null
+    }
+  },
+  {
+    "type": "HumanMessage",
+    "content": "我喜欢机器学习",
+    "additional_kwargs": {}
+  },
+  {
+    "type": "AIMessage",
+    "content": "您想问什么呢？",
+    "additional_kwargs": {
+      "refusal": null
+    }
+  }
+]

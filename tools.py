@@ -37,11 +37,7 @@ def make_openai(model_name: str = None):
 
 def make_ollama(model_name: str = None):
     if model_name is None:
-<<<<<<< Updated upstream
-        model_name = "llama3.1:8b"
-=======
         model_name = "llama3.2"
->>>>>>> Stashed changes
     return ChatOpenAI(
         model=model_name,
         temperature=0,

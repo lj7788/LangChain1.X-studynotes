@@ -6,17 +6,17 @@ MultiQueryRetriever 使用 LLM 为每个查询生成多个变体，
 然后从所有变体的检索结果中合并去重，提高检索的召回率。
 """
 
-from langchain.retrievers.multi_query import MultiQueryRetriever
-from langchain.text_splitter import CharacterTextSplitter
-from langchain.schema import Document
+from langchain_classic.retrievers.multi_query import MultiQueryRetriever
+from langchain_text_splitters import CharacterTextSplitter
+from langchain_core.documents import Document
 from langchain_community.vectorstores import Chroma
-from langchain_community.embeddings import HuggingFaceEmbeddings
+from langchain_ollama import OllamaEmbeddings 
 import sys
-sys.path.append("/Volumes/data/code/me/2026/03/LangChain1.X-")
-from tools import make_model
+sys.path.append("../")
+from tools import make_ollama
 
-llm = make_model()
-embedding = HuggingFaceEmbeddings(model_name="dengcao/Dmeta-embedding-zh:F16")
+llm = make_ollama()
+embedding = OllamaEmbeddings(model="dengcao/Dmeta-embedding-zh:F16")
 
 documents = [
     Document(
@@ -49,40 +49,32 @@ NLP 涉及文本分析、文本生成、机器翻译、情感分析等任务。
 近年来，基于 Transformer 的预训练语言模型（如 BERT、GPT）大幅提升了 NLP 任务的性能。""",
         metadata={"source": "nlp", "topic": "AI"}
     ),
-    Document(
-        page_content="""PyTorch 是一个开源的深度学习框架，由 Facebook 开发。
-PyTorch 以其动态计算图和易用性而受到研究者欢迎。
-PyTorch 提供了丰富的神经网络模块和优化算法。""",
-        metadata={"source": "pytorch", "topic": "深度学习框架"}
-    ),
 ]
 
-text_splitter = CharacterTextSplitter(chunk_size=150, chunk_overlap=0)
+text_splitter = CharacterTextSplitter(chunk_size=100, chunk_overlap=0)
 texts = text_splitter.split_documents(documents)
 
 vectorstore = Chroma.from_documents(texts, embedding=embedding)
 base_retriever = vectorstore.as_retriever(search_kwargs={"k": 2})
 
-print("=== 基础检索 ===\n")
-query = "深度学习框架有哪些？"
-docs = base_retriever.invoke(query)
-print(f"查询: {query}\n")
-for i, doc in enumerate(docs, 1):
-    print(f"文档 {i}: {doc.page_content[:60]}... (来源: {doc.metadata['source']})")
+print("=== MultiQueryRetriever 多查询检索器 ===\n")
 
-print("\n=== MultiQueryRetriever 检索 ===\n")
-multi_query_retriever = MultiQueryRetriever.from_llm(
+retriever = MultiQueryRetriever.from_llm(
     retriever=base_retriever,
     llm=llm
 )
 
-unique_docs = multi_query_retriever.invoke(query)
-print(f"查询: {query}\n")
-print(f"返回的文档数量: {len(unique_docs)}\n")
-for i, doc in enumerate(unique_docs, 1):
-    print(f"文档 {i}: {doc.page_content[:60]}... (来源: {doc.metadata['source']})")
+query = "深度学习在哪些领域有应用？"
+print(f"原始查询: {query}\n")
 
-print("\n=== 查看生成的查询变体 ===")
-print("MultiQueryRetriever 会为原始查询生成多个变体，")
-print("例如: '深度学习框架有哪些？' -> ['深度学习框架有哪些？', '常用的深度学习框架是什么？', '主流的深度学习库有哪些？']")
-print("这样可以从不同角度检索，增加找到相关文档的可能性。")
+print("--- 基础检索结果 ---")
+basic_docs = base_retriever.invoke(query)
+for i, doc in enumerate(basic_docs, 1):
+    print(f"文档 {i}: {doc.page_content[:60]}...")
+    print(f"来源: {doc.metadata['source']}\n")
+
+print("--- MultiQuery 检索结果 ---")
+unique_docs = retriever.invoke(query)
+for i, doc in enumerate(unique_docs, 1):
+    print(f"文档 {i}: {doc.page_content[:60]}...")
+    print(f"来源: {doc.metadata['source']}\n")

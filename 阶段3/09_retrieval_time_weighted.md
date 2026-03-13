@@ -4,40 +4,33 @@
 
 `TimeWeightedVectorStoreRetriever` 根据文档的新鲜度（最后访问时间）和语义相似度进行检索，平衡"新鲜"文档和"相关"文档的重要性。
 
-## 核心概念
+## 核心特性
 
-### 为什么需要时间加权检索？
+- **时间衰减**: 越 recent 访问的文档权重越高
+- **语义相似度**: 同时考虑文档与查询的语义相关性
+- **灵活配置**: 可调整衰减率控制时间影响力
 
-在很多应用场景中，我们希望：
-- 优先展示最近访问/更新的文档
-- 同时保留语义相似度的考量
-- 让用户更容易找到"最新"的相关信息
+## 关键组件
 
-### 评分公式
+### TimeWeightedVectorStoreRetriever
 
+```python
+from langchain_classic.retrievers import TimeWeightedVectorStoreRetriever
+
+retriever = TimeWeightedVectorStoreRetriever(
+    vectorstore=vectorstore,
+    decay_rate=0.01,
+    k=3
+)
 ```
-Score = (1 - decay_rate) ^ hours_since_access * semantic_score
-```
-
-- **decay_rate**: 衰减率，控制新鲜度权重下降的速度
-- **hours_since_access**: 距离上次访问的小时数
-- **semantic_score**: 向量相似度分数
 
 ## 关键参数
 
 | 参数 | 说明 |
 |------|------|
-| vectorstore | 向量数据库 |
-| search_kwargs | 检索参数（如 k） |
-| decay_rate | 衰减率（0-1），越大越偏向新文档 |
+| vectorstore | 向量存储 |
+| decay_rate | 衰减率，值越小早期文档权重下降越慢 |
 | k | 返回的文档数量 |
-
-## 使用场景
-
-- 新闻资讯检索
-- 文档版本管理
-- 推荐系统
-- 用户历史浏览记录
 
 ## 运行示例
 
@@ -50,29 +43,17 @@ python 阶段3/09_retrieval_time_weighted.py
 ```
 === TimeWeightedVectorStoreRetriever ===
 
-查询: Python 编程语言
+查询 1: Python 编程语言
+首次检索结果:
+  1. Python 是一种高级编程语言...
+  2. Python 3.12 版本引入了许多新特性...
+  3. JavaScript 是 Web 的编程语言...
 
-首次检索结果（按新鲜度加权）:
-文档 1: Python 3.12 版本引入了许多新特性，包括更好的性能。
-   来源: doc2, 最后访问: 2024-12-01
+查询 2: JavaScript
+第二次检索结果（部分文档已被访问）:
+  1. JavaScript 是 Web 的编程语言...
+  2. Python 是一种高级编程语言...
+  3. TypeScript 是 JavaScript 的超集...
 
-文档 2: Go 是 Google 开发的编程语言，适合构建高效的服务器应用。
-   来源: doc6, 最后访问: 2024-10-01
-
-文档 3: Python 是一种高级编程语言，由 Guido van Rossum 于 1991 年创建。
-   来源: doc1, 最后访问: 2024-01-01
-
-=== 模拟用户访问文档 ===
-用户访问了: Python 3.12 版本引入了许多新特性
-用户访问了: TypeScript 是 JavaScript 的超集
-
-=== 再次检索相同查询 ===
-查询: Python 编程语言
-
-调整后的检索结果（刚才访问的文档排名提升）:
-文档 1: Python 3.12 版本引入了许多新特性，包括更好的性能。
-   来源: doc2, 最后访问: 2024-12-01
-
-文档 2: Python 是一种高级编程语言，由 Guido van Rossum 于 1991 年创建。
-   来源: doc1, 最后访问: 2024-01-01
+说明: decay_rate 控制时间衰减速度，值越小，早期访问的文档权重下降越慢。
 ```

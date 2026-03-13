@@ -5,16 +5,16 @@ Retrieval - EnsembleRetriever 集成检索器
 EnsembleRetriever 结合多个检索器的结果，通过加权融合的方式返回最终结果。
 """
 
-from langchain.retrievers import EnsembleRetriever
-from langchain.text_splitter import CharacterTextSplitter
-from langchain.schema import Document
+from langchain_classic.retrievers import EnsembleRetriever
+from langchain_text_splitters import CharacterTextSplitter
+from langchain_core.documents import Document
 from langchain_community.vectorstores import Chroma, FAISS
 from langchain_community.embeddings import HuggingFaceEmbeddings
 import sys
-sys.path.append("/Volumes/data/code/me/2026/03/LangChain1.X-")
-from tools import make_model
+sys.path.append("../")
+from tools import make_ollama
 
-llm = make_model()
+llm = make_ollama()
 embedding = HuggingFaceEmbeddings(model_name="dengcao/Dmeta-embedding-zh:F16")
 
 documents = [
@@ -53,39 +53,28 @@ chroma_retriever = chroma_vectorstore.as_retriever(search_kwargs={"k": 2})
 faiss_vectorstore = FAISS.from_documents(texts, embedding=embedding)
 faiss_retriever = faiss_vectorstore.as_retriever(search_kwargs={"k": 2})
 
-print("=== Chroma 检索器结果 ===\n")
-query = "Python Web 框架有哪些？"
-chroma_docs = chroma_retriever.invoke(query)
-print(f"查询: {query}\n")
-for i, doc in enumerate(chroma_docs, 1):
-    print(f"文档 {i}: {doc.page_content} (来源: {doc.metadata['source']})")
-
-print("\n=== FAISS 检索器结果 ===\n")
-faiss_docs = faiss_retriever.invoke(query)
-print(f"查询: {query}\n")
-for i, doc in enumerate(faiss_docs, 1):
-    print(f"文档 {i}: {doc.page_content} (来源: {doc.metadata['source']})")
-
-print("\n=== EnsembleRetriever 集成检索结果 ===\n")
 ensemble_retriever = EnsembleRetriever(
     retrievers=[chroma_retriever, faiss_retriever],
     weights=[0.5, 0.5]
 )
 
-ensemble_docs = ensemble_retriever.invoke(query)
+print("=== EnsembleRetriever 集成检索器 ===\n")
+
+query = "Python Web 框架有哪些？"
 print(f"查询: {query}\n")
-print(f"返回文档数量: {len(ensemble_docs)}\n")
+
+print("--- Chroma 检索结果 ---")
+chroma_docs = chroma_retriever.invoke(query)
+for i, doc in enumerate(chroma_docs, 1):
+    print(f"文档 {i}: {doc.page_content}")
+
+print("\n--- FAISS 检索结果 ---")
+faiss_docs = faiss_retriever.invoke(query)
+for i, doc in enumerate(faiss_docs, 1):
+    print(f"文档 {i}: {doc.page_content}")
+
+print("\n--- Ensemble 检索结果 ---")
+ensemble_docs = ensemble_retriever.invoke(query)
 for i, doc in enumerate(ensemble_docs, 1):
-    print(f"文档 {i}: {doc.page_content} (来源: {doc.metadata['source']})")
-
-print("\n=== 不同权重示例 ===\n")
-ensemble_retriever_weighted = EnsembleRetriever(
-    retrievers=[chroma_retriever, faiss_retriever],
-    weights=[0.7, 0.3]
-)
-
-ensemble_docs_weighted = ensemble_retriever_weighted.invoke(query)
-print(f"查询: {query}")
-print(f"权重 [0.7, 0.3]，返回 {len(ensemble_docs_weighted)} 个文档")
-for i, doc in enumerate(ensemble_docs_weighted, 1):
-    print(f"文档 {i}: {doc.page_content} (来源: {doc.metadata['source']})")
+    print(f"文档 {i}: {doc.page_content}")
+    print(f"来源: {doc.metadata['source']}\n")
