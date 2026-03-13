@@ -44,4 +44,4 @@ Thumbs.db
 faiss_index/
 chroma/
 *.vectordb
-data_index/
+
