@@ -13,12 +13,12 @@ from langchain_classic.memory import VectorStoreRetrieverMemory
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain_core.runnables.history import RunnableWithMessageHistory
 from langchain_community.vectorstores import Chroma
-from langchain_community.embeddings import HuggingFaceEmbeddings
+from langchain_ollama import OllamaEmbeddings
 from langchain_core.documents import Document
 
 llm = make_ollama()
 
-embedding = HuggingFaceEmbeddings(model_name="dengcao/Dmeta-embedding-zh:F16")
+embedding = OllamaEmbeddings(model="dengcao/Dmeta-embedding-zh:F16")
 
 initial_memory = [
     Document(

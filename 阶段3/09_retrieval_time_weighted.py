@@ -10,13 +10,13 @@ from langchain_classic.retrievers import TimeWeightedVectorStoreRetriever
 from langchain_text_splitters import CharacterTextSplitter
 from langchain_core.documents import Document
 from langchain_community.vectorstores import Chroma
-from langchain_community.embeddings import HuggingFaceEmbeddings
+from langchain_ollama import OllamaEmbeddings
 import sys
 sys.path.append("../")
 from tools import make_ollama
 
 llm = make_ollama()
-embedding = HuggingFaceEmbeddings(model_name="dengcao/Dmeta-embedding-zh:F16")
+embedding = OllamaEmbeddings(model="dengcao/Dmeta-embedding-zh:F16")
 
 documents = [
     Document(
