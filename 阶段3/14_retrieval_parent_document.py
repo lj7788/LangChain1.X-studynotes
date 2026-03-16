@@ -11,6 +11,40 @@ ParentDocumentRetriever 工作原理：
 这样既保证了检索的精确性，又保证了返回内容的完整性。
 
 特点：索引可以保存到本地，下次直接加载使用，无需重新创建。
+
+核心概念：
+- 父文档：完整的文档内容，保留完整上下文
+- 子文档：分割后的小块，用于精确检索
+- 父子关系：通过 doc_id 关联父文档和子文档
+- 索引持久化：将向量数据库保存到磁盘
+
+工作流程：
+1. 加载原始文档（三国演义章节）
+2. 分割成父文档（较大块，保留完整上下文）
+3. 分割成子文档（小块，用于精确检索）
+4. 建立父子关系并保存到向量数据库
+5. 检索时：用子文档检索，返回父文档
+
+参数说明：
+- parent_splitter.chunk_size: 父文档大小（1500字符）
+- child_splitter.chunk_size: 子文档大小（200字符）
+- chunk_overlap: 块之间的重叠字符数
+
+优点：
+- 检索精确（使用小块）
+- 上下文完整（返回大块）
+- 无需额外 LLM 调用
+- 索引可持久化
+
+缺点：
+- 需要额外的存储空间
+- 需要维护父子关系
+- 首次建立索引较慢
+
+使用场景：
+- 需要平衡精确性和完整性的场景
+- 长文档检索
+- 需要返回完整上下文的应用
 """
 
 import os
@@ -29,11 +63,11 @@ from langchain_ollama import OllamaEmbeddings  # Ollama embedding 模型
 
 # 导入项目工具
 sys.path.append("../")
-from tools import make_ollama
+from tools import make_ollama, make_embedding
 
 # ============ 初始化 LLM 和 embedding 模型 ============
 llm = make_ollama()
-embedding = OllamaEmbeddings(model="dengcao/Dmeta-embedding-zh:F16")
+embedding = make_embedding()
 
 # ============ 配置路径 ============
 # parent_documents 目录用于保存原始章节内容
@@ -142,13 +176,24 @@ if hasIndexSave:
     print(f"索引已加载: {vectorstore._collection.count()} 条")
     
     # 重新添加文档到 retriever 以恢复 docstore
-    retriever = ParentDocumentRetriever(
-        vectorstore=vectorstore,
-        docstore=docstore,
-        child_splitter=child_splitter,
-        parent_splitter=parent_splitter,
-    )
-    retriever.add_documents(parent_documents)
+    # 过滤掉空文档，避免 embedding API 错误
+    valid_documents = [doc for doc in parent_documents if doc.page_content.strip()]
+    if valid_documents:
+        retriever = ParentDocumentRetriever(
+            vectorstore=vectorstore,
+            docstore=docstore,
+            child_splitter=child_splitter,
+            parent_splitter=parent_splitter,
+        )
+        retriever.add_documents(valid_documents)
+    else:
+        print("警告：没有有效的文档需要添加")
+        retriever = ParentDocumentRetriever(
+            vectorstore=vectorstore,
+            docstore=docstore,
+            child_splitter=child_splitter,
+            parent_splitter=parent_splitter,
+        )
 else:
     print("\n🆕 创建新的索引...")
     
@@ -173,11 +218,12 @@ else:
         parent_splitter=parent_splitter,  # 父文档分割器
     )
 
-    # 添加文档，检索器会自动：
-    # 1. 用 parent_splitter 分割成父文档
-    # 2. 用 child_splitter 进一步分割成子文档
-    # 3. 将子文档存入向量库，父文档存入 docstore
-    retriever.add_documents(parent_documents)
+    # 分批添加文档，避免 Chroma batch size 限制
+    batch_size = 20
+    for i in range(0, len(parent_documents), batch_size):
+        batch = parent_documents[i:i + batch_size]
+        retriever.add_documents(batch)
+        print(f"已处理 {min(i + batch_size, len(parent_documents))}/{len(parent_documents)} 个文档")
 
     # 显式保存索引到磁盘
     vectorstore.persist()

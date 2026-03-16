@@ -9,6 +9,42 @@ Retrieval - 多粒度索引预保存方案（使用三国演义数据）
 检索时先从细粒度索引检索，然后返回对应的粗粒度文档。
 
 特点：索引可以保存到本地，下次直接加载使用，无需重新创建。
+
+核心概念：
+- 多粒度索引：创建不同大小的文档块
+- 细粒度检索：使用小块进行精确检索
+- 粗粒度返回：返回大块提供完整上下文
+- doc_id 关联：通过 doc_id 关联细粒度和粗粒度文档
+
+工作流程：
+1. 加载原始文档（三国演义章节）
+2. 创建细粒度 chunks（300字符）
+3. 创建粗粒度 chunks（800字符）
+4. 为每个 chunk 添加 doc_id 元数据
+5. 分别建立细粒度和粗粒度向量索引
+6. 检索时：用细粒度检索，返回粗粒度
+
+参数说明：
+- fine_splitter.chunk_size: 细粒度块大小（300字符）
+- coarse_splitter.chunk_size: 粗粒度块大小（800字符）
+- chunk_overlap: 块之间的重叠字符数
+
+优点：
+- 检索精确（使用小块）
+- 上下文完整（返回大块）
+- 无需额外 LLM 调用
+- 索引可持久化
+- 查询速度快
+
+缺点：
+- 需要额外的存储空间
+- 需要维护两层索引
+- 首次建立索引较慢
+
+使用场景：
+- 需要平衡精确性和完整性的场景
+- 长文档检索
+- 需要快速响应的应用
 """
 
 import os
@@ -26,12 +62,12 @@ from langchain_ollama import OllamaEmbeddings  # Ollama embedding 模型
 
 # 导入项目工具
 sys.path.append("../")
-from tools import make_ollama
+from tools import make_ollama, make_embedding
 
 # ============ 初始化 Embedding 模型 ============
 # 使用 Ollama 的中文 embedding 模型
 # 模型名称格式：dengcao/Dmeta-embedding-zh:F16（必须带版本号）
-embedding = OllamaEmbeddings(model="dengcao/Dmeta-embedding-zh:F16")
+embedding = make_embedding()
 
 # ============ 配置路径 ============
 # data_index 目录用于保存索引数据

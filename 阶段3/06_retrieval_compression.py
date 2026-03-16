@@ -4,6 +4,31 @@ Retrieval - ContextualCompression 上下文压缩检索器
 
 ContextualCompressionRetriever 可以压缩检索到的文档，只保留与查询相关的部分，
 减少输入给 LLM 的上下文长度。
+
+核心概念：
+- ContextualCompressionRetriever: 上下文压缩检索器
+- LLMChainExtractor: 使用 LLM 提取文档中与查询相关的部分
+- 压缩策略：只保留与查询最相关的内容
+
+工作流程：
+1. 使用基础检索器检索相关文档
+2. 使用 LLMChainExtractor 压缩每个文档
+3. 只保留与查询相关的部分
+4. 返回压缩后的文档
+
+优点：
+- 减少 token 消耗，降低成本
+- 提高回答的准确性，去除无关信息
+- 适合长文档检索场景
+
+缺点：
+- 需要额外的 LLM 调用，增加延迟
+- 可能丢失一些有用的上下文
+
+使用场景：
+- 文档较长，包含大量无关信息
+- 需要精确回答的问答系统
+- Token 预算有限的应用
 """
 
 from langchain_classic.retrievers import ContextualCompressionRetriever
@@ -11,15 +36,15 @@ from langchain_classic.retrievers.document_compressors import LLMChainExtractor
 from langchain_text_splitters import CharacterTextSplitter
 from langchain_core.documents import Document
 from langchain_community.vectorstores import Chroma
-from langchain_ollama import OllamaEmbeddings
 import sys
 sys.path.append("../")
-from tools import make_ollama
+from tools import make_ollama, make_embedding
 
+# 初始化 Ollama LLM 和 embedding 模型
 llm = make_ollama()
+embedding = make_embedding()
 
-embedding = OllamaEmbeddings(model="dengcao/Dmeta-embedding-zh:F16")
-
+# 创建示例文档集合
 documents = [
     Document(
         page_content="""Python 是一种高级编程语言，由 Guido van Rossum 于 1991 年首次发布。
@@ -53,13 +78,16 @@ JavaScript 生态系统非常丰富，有大量的 npm 包可供使用。""",
     ),
 ]
 
+# 使用文本分割器将文档分割成小块
 text_splitter = CharacterTextSplitter(chunk_size=200, chunk_overlap=0)
 texts = text_splitter.split_documents(documents)
 
+# 创建向量数据库并初始化检索器
 vectorstore = Chroma.from_documents(texts, embedding=embedding)
 retriever = vectorstore.as_retriever(search_kwargs={"k": 3})
 
 print("=== 基础检索（未压缩）===\n")
+# 测试查询：Python 在数据科学和机器学习中的应用
 query = "Python 在数据科学和机器学习中的应用"
 docs = retriever.invoke(query)
 print(f"查询: {query}\n")
@@ -69,13 +97,15 @@ for i, doc in enumerate(docs, 1):
     print(f"来源: {doc.metadata['source']}\n")
 
 print("\n=== 使用 ContextualCompression 压缩检索 ===\n")
+# 创建压缩器：使用 LLM 提取与查询相关的内容
 compressor = LLMChainExtractor.from_llm(llm)
+# 创建压缩检索器
 compression_retriever = ContextualCompressionRetriever(
     base_compressor=compressor,
     base_retriever=retriever
 )
 
-
+# 使用压缩检索器检索
 compressed_docs = compression_retriever.invoke(query)
 print(f"查询: {query}\n")
 for i, doc in enumerate(compressed_docs, 1):

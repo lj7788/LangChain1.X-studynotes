@@ -4,6 +4,33 @@ Retrieval - MultiQueryRetriever 多查询检索器
 
 MultiQueryRetriever 使用 LLM 为每个查询生成多个变体，
 然后从所有变体的检索结果中合并去重，提高检索的召回率。
+
+核心概念：
+- MultiQueryRetriever: 多查询检索器
+- 查询变体：使用 LLM 生成多个相似但不同的查询
+- 合并去重：合并所有查询的结果，去除重复文档
+
+工作流程：
+1. 用户输入原始查询
+2. LLM 生成多个查询变体（通常3-5个）
+3. 对每个查询进行检索
+4. 合并所有结果并去重
+5. 返回最相关的文档
+
+优点：
+- 提高召回率，找到更多相关文档
+- 解决查询表述不准确的问题
+- 适合语义相近但表述不同的查询
+
+缺点：
+- 增加检索时间（需要多次检索）
+- 可能返回一些不太相关的文档
+- 需要额外的 LLM 调用
+
+使用场景：
+- 查询表述不确定
+- 需要高召回率的场景
+- 专业知识库检索
 """
 
 from langchain_classic.retrievers.multi_query import MultiQueryRetriever
@@ -13,11 +40,13 @@ from langchain_community.vectorstores import Chroma
 from langchain_ollama import OllamaEmbeddings 
 import sys
 sys.path.append("../")
-from tools import make_ollama
+from tools import make_ollama,make_embedding
 
+# 初始化 Ollama LLM 和 embedding 模型
 llm = make_ollama()
-embedding = OllamaEmbeddings(model="dengcao/Dmeta-embedding-zh:F16")
+embedding = make_embedding()
 
+# 创建示例文档集合（AI相关主题）
 documents = [
     Document(
         page_content="""深度学习是机器学习的一个分支，它使用多层神经网络来学习数据的表示。
@@ -51,28 +80,35 @@ NLP 涉及文本分析、文本生成、机器翻译、情感分析等任务。
     ),
 ]
 
+# 使用文本分割器将文档分割成小块
 text_splitter = CharacterTextSplitter(chunk_size=100, chunk_overlap=0)
 texts = text_splitter.split_documents(documents)
 
+# 创建向量数据库并初始化基础检索器
 vectorstore = Chroma.from_documents(texts, embedding=embedding)
 base_retriever = vectorstore.as_retriever(search_kwargs={"k": 2})
 
 print("=== MultiQueryRetriever 多查询检索器 ===\n")
 
+# 创建多查询检索器
+# from_llm: 使用 LLM 生成查询变体
 retriever = MultiQueryRetriever.from_llm(
     retriever=base_retriever,
     llm=llm
 )
 
+# 测试查询
 query = "深度学习在哪些领域有应用？"
 print(f"原始查询: {query}\n")
 
+# 使用基础检索器检索
 print("--- 基础检索结果 ---")
 basic_docs = base_retriever.invoke(query)
 for i, doc in enumerate(basic_docs, 1):
     print(f"文档 {i}: {doc.page_content[:60]}...")
     print(f"来源: {doc.metadata['source']}\n")
 
+# 使用多查询检索器检索
 print("--- MultiQuery 检索结果 ---")
 unique_docs = retriever.invoke(query)
 for i, doc in enumerate(unique_docs, 1):
