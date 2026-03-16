@@ -220,18 +220,22 @@ python 阶段2/20_rag_sg_load.py
 | ---- | ---- |
 | 01_memory_buffer.py | ChatMessageHistory + RunnableWithMessageHistory |
 | 02_memory_summary.py | ConversationSummaryMemory 对话摘要 |
-| 03_memory_persist.py | 记忆持久化 |
-| 04_memory_lcel.py | LCEL 中使用 Memory |
-| 05_memory_buffer_window.py | 窗口记忆 |
-| 06_memory_token_buffer.py | Token计数记忆 |
-| 07_memory_vectorstore.py | VectorStoreRetrieverMemory |
-| 08_memory_entity_kg.py | 手动实体关系提取 |
-| 09_retrieval_compression.py | ContextualCompressionRetriever |
-| 10_retrieval_multi_query.py | MultiQueryRetriever |
-| 11_retrieval_ensemble.py | EnsembleRetriever |
-| 12_retrieval_time_weighted.py | TimeWeightedRetriever |
+| 03memory_comparison.md | 各种 Memory 对比 |
+| 04_memory_persist.py | 记忆持久化 |
+| 05_memory_lcel.py | LCEL 中使用 Memory |
+| 06_retrieval_compression.py | ContextualCompressionRetriever |
+| 07_retrieval_multi_query.py | MultiQueryRetriever |
+| 08_retrieval_ensemble.py | EnsembleRetriever |
+| 09_retrieval_time_weighted.py | TimeWeightedRetriever |
+| 11_memory_buffer_window.py | 窗口记忆 |
+| 12_memory_token_buffer.py | Token计数记忆 |
 | 13_retrieval_self_query.py | SelfQueryRetriever |
 | 14_retrieval_parent_document.py | ParentDocumentRetriever |
+| 15_memory_vectorstore.py | VectorStoreRetrieverMemory |
+| 16_memory_entity_kg.py | 实体关系提取与知识图谱 |
+| 17_memory_file_history.py | FileChatMessageHistory 文件历史 |
+| 18_multi_chunk_index.py | 多片段索引 |
+| 19_llm_summary_compression.py | LLM 摘要压缩 |
 
 **代码位置：** `./阶段3/`
 
