@@ -22,20 +22,38 @@
 
 ### 2. 环境准备
 
-- 开发工具：Trae IDE (macOS)
-- 大语言模型：MiniMax-M2.5
-- Python 3.10+ 环境
+- 开发工具：VS Code / Trae IDE (macOS)
+- 大语言模型：GLM-4.7-Flash（可通过 .env 配置）
+- Python 3.13.3 环境
 - LangChain 1.2.x 安装
-- 基础依赖：langchain-core, langchain-community
+- 基础依赖：langchain-core, langchain-community, langchain-openai
 - API 密钥配置：在项目根目录创建 `.env` 文件，内容如下：
 
 ```bash
 OPENAI_API_KEY=your_api_key_here
-OPENAI_API_BASE=https://api.minimaxi.com/v1
-OPENAI_API_MODEL=MiniMax-M2.5
+OPENAI_API_BASE=https://api.example.com/v1
+OPENAI_API_MODEL=GLM-4.7-Flash
 ```
 
 > 注意：代码会自动读取项目根目录的 `.env` 文件，请确保已配置正确的 API 密钥。
+
+**工具说明：**
+
+项目提供了 `tools.py` 工具文件，包含以下便捷函数：
+
+- `make_model(model_name)`: 创建 ChatOpenAI 模型实例
+- `make_openai(model_name)`: 创建 OpenAI LLM 模型实例
+- `make_ollama(model_name)`: 创建本地 Ollama 模型实例
+- `make_embedding(base_url, model)`: 创建本地 Embeddings 实例（基于 llama.cpp）
+
+**本地模型支持：**
+
+项目支持使用本地模型（通过 Ollama）：
+
+- LLM: `gemma4:e4b-it-q4_K_M_opt`
+- Embeddings: `bge-m3:latest`
+
+使用前请确保已启动 Ollama 服务并下载相应模型。
 
 ### 3. 核心组件
 
@@ -68,7 +86,8 @@ OPENAI_API_MODEL=MiniMax-M2.5
 | 08_output_parser_str.py      | 字符串输出解析器             |
 | 09_output_parser_json.py     | JSON 输出解析器              |
 | 10_chain_llm.py              | LLMChain 基础                |
-| 11_chain_sequential.py       | 顺序链 SimpleSequentialChain |
+| 11_2_chain_sequential.py     | 顺序链 SimpleSequentialChain |
+| 11_chain_sequential.py       | 顺序链基础示例               |
 | 12_chain_sequential_multi.py | 多输入输出顺序链             |
 | 13_chain_transform.py        | TransformChain 转换链        |
 
@@ -114,9 +133,9 @@ OPENAI_API_MODEL=MiniMax-M2.5
 | 09_text_splitter_markdown.py | Markdown 分割器 |
 | 10_text_splitter_python.py | Python 代码分割器 |
 | 11_text_splitter_with_metadata.py | 带元数据的文档分割 |
-| 12_split_by_chapter.py | 按章节分割文档 |
 | 12_embeddings_openai.py | OpenAI Embeddings |
-| 13_embeddings_huggingface.py | HuggingFace 本地 Embeddings |
+| 12_split_by_chapter.py | 按章节分割文档 |
+| 13_embeddings_huggingface.md | HuggingFace 本地 Embeddings 文档 |
 | 13_embeddings_ollama.py | Ollama 本地 Embeddings |
 | 14_embeddings_similarity.py | Embeddings 相似度计算 |
 | 15_vectorstore_chroma.py | Chroma 向量数据库 |
@@ -124,6 +143,7 @@ OPENAI_API_MODEL=MiniMax-M2.5
 | 17_vectorstore_save_load.py | 向量数据库保存与加载 |
 | 18_vectorstore_mmr.py | MMR 搜索 |
 | 19_rag_pipeline.py | 完整 RAG 流程示例 |
+| 20_rag_sg.md | 三国演义 RAG 实战文档 |
 | 20_rag_sg.py | **三国演义 RAG 实战** |
 | 20_rag_sg_load.py | **三国演义 RAG - 加载向量数据库** |
 
@@ -216,26 +236,38 @@ python 阶段2/20_rag_sg_load.py
 
 ### 示例代码
 
+**Memory 组件：**
+
 | 文件 | 内容 |
 | ---- | ---- |
 | 01_memory_buffer.py | ChatMessageHistory + RunnableWithMessageHistory |
 | 02_memory_summary.py | ConversationSummaryMemory 对话摘要 |
-| 03memory_comparison.md | 各种 Memory 对比 |
+| 03memory_comparison.md | Memory 组件对比文档 |
 | 04_memory_persist.py | 记忆持久化 |
 | 05_memory_lcel.py | LCEL 中使用 Memory |
-| 06_retrieval_compression.py | ContextualCompressionRetriever |
-| 07_retrieval_multi_query.py | MultiQueryRetriever |
-| 08_retrieval_ensemble.py | EnsembleRetriever |
-| 09_retrieval_time_weighted.py | TimeWeightedRetriever |
-| 11_memory_buffer_window.py | 窗口记忆 |
-| 12_memory_token_buffer.py | Token计数记忆 |
-| 13_retrieval_self_query.py | SelfQueryRetriever |
-| 14_retrieval_parent_document.py | ParentDocumentRetriever |
-| 15_memory_vectorstore.py | VectorStoreRetrieverMemory |
+| 11_memory_buffer_window.py | 窗口记忆（最近 k 轮对话） |
+| 12_memory_token_buffer.py | Token 计数记忆 |
+| 15_memory_vectorstore.py | VectorStoreRetrieverMemory 向量存储记忆 |
 | 16_memory_entity_kg.py | 实体关系提取与知识图谱 |
-| 17_memory_file_history.py | FileChatMessageHistory 文件历史 |
-| 18_multi_chunk_index.py | 多片段索引 |
-| 19_llm_summary_compression.py | LLM 摘要压缩 |
+| 17_memory_file_history.py | FileChatMessageHistory 文件持久化 |
+
+**Retrieval 组件：**
+
+| 文件 | 内容 |
+| ---- | ---- |
+| 06_retrieval_compression.py | ContextualCompressionRetriever 上下文压缩 |
+| 07_retrieval_multi_query.py | MultiQueryRetriever 多查询检索 |
+| 08_retrieval_ensemble.py | EnsembleRetriever 集成检索器 |
+| 09_retrieval_time_weighted.py | TimeWeightedRetriever 时间加权检索 |
+| 13_retrieval_self_query.py | SelfQueryRetriever 自查询检索 |
+| 14_retrieval_parent_document.py | ParentDocumentRetriever 父文档检索 |
+
+**高级检索方案：**
+
+| 文件 | 内容 |
+| ---- | ---- |
+| 18_multi_chunk_index.py | 多粒度索引预保存方案 |
+| 19_llm_summary_compression.py | LLM 摘要预压缩方案 |
 
 **代码位置：** `./阶段3/`
 
@@ -263,6 +295,32 @@ python 阶段2/20_rag_sg_load.py
 - Edge
 - 条件边
 
+### 示例代码
+
+**Agents（Agent 类型与执行）：**
+
+| 文件 | 内容 |
+| ---- | ---- |
+| 01_agent_basic.py | Agent 基础 - AgentExecutor + ReAct 范式 |
+| 03_agent_openai_tools.py | OpenAI Tool Calling 范式 - 函数调用 Agent |
+
+**Tools（工具定义与绑定）：**
+
+| 文件 | 内容 |
+| ---- | ---- |
+| 02_tools_custom.py | @tool 装饰器自定义工具 + bind_tools 绑定 |
+| 07_agent_toolkits.py | 工具集（Toolkit）封装与集成 |
+
+**LangGraph（有状态图）：**
+
+| 文件 | 内容 |
+| ---- | ---- |
+| 04_langgraph_basic.py | LangGraph 基础：State / Node / Edge |
+| 05_langgraph_conditional.py | 条件边与循环路由 |
+| 06_langgraph_chatbot.py | **带记忆的聊天机器人实战** |
+
+**代码位置：** `./阶段4/`
+
 ---
 
 ## 阶段五：进阶应用（第9-10周）
@@ -283,6 +341,18 @@ python 阶段2/20_rag_sg_load.py
 - 错误处理
 - 重试机制
 - 流式输出
+
+### 示例代码
+
+| 文件 | 内容 |
+| ---- | ---- |
+| 01_callbacks.py | 回调系统 - BaseCallbackHandler 自定义回调 |
+| 02_output_parsers.py | 输出解析器 - Pydantic / JSON / XML / List |
+| 03_streaming.py | 流式输出 - stream / astream / stream_events |
+| 04_error_retry.py | 错误处理与重试 - with_retry / with_fallbacks |
+| 05_structured_output.py | 结构化输出 - with_structured_output |
+
+**代码位置：** `./阶段5/`
 
 ---
 
@@ -312,25 +382,59 @@ python 阶段2/20_rag_sg_load.py
 
 ---
 
-## 环境依赖（已安装）
+## 环境依赖
+
+### 核心依赖
 
 ```
 langchain==1.2.12
 langchain-core==1.2.18
 langgraph==1.1.1
 langsmith==0.7.16
+langchain-openai
+langchain-community
+langchain-ollama
+python-dotenv
 ```
 
-### 使用 Gitee AI 模型
-
-所有示例代码使用 Gitee AI（https://ai.gitee.com/v1）作为模型提供者：
-
-- **API 地址**: `https://ai.gitee.com/v1`
-- **默认模型**: `Qwen/Qwen2.5-7B-Instruct`
-- **API Key**: 需要在 Gitee AI 平台申请
-
-运行示例前请安装依赖：
+### 安装依赖
 
 ```bash
-pip install langchain-openai
+# 安装基础依赖
+pip install langchain langchain-core langchain-community langchain-openai
+
+# 安装 Ollama 支持（可选，用于本地模型）
+pip install langchain-ollama
+
+# 安装环境变量管理
+pip install python-dotenv
+```
+
+### API 配置
+
+所有示例代码使用配置在 `.env` 文件中的 API：
+
+- **API 地址**: 通过 `OPENAI_API_BASE` 环境变量配置
+- **API Key**: 通过 `OPENAI_API_KEY` 环境变量配置
+- **默认模型**: 通过 `OPENAI_API_MODEL` 环境变量配置（默认：GLM-4.7-Flash）
+
+### 本地模型支持（可选）
+
+项目支持使用本地模型（通过 Ollama）：
+
+- LLM: `gemma4:e4b-it-q4_K_M_opt`
+- Embeddings: `bge-m3:latest`
+
+使用前请确保已启动 Ollama 服务并下载相应模型：
+
+```bash
+# 启动 Ollama 服务
+ollama serve
+
+# 下载模型
+ollama pull gemma4:e4b-it-q4_K_M_opt
+ollama pull bge-m3:latest
+
+# 启动本地服务器（可选）
+bash start-llama-servers.sh
 ```

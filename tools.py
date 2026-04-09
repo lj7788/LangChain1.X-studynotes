@@ -38,7 +38,7 @@ def make_openai(model_name: str = None):
 
 def make_ollama(model_name: str = None):
     if model_name is None:
-        model_name = "llama3.2"
+        model_name = "gemma4:e4b-it-q4_K_M_opt"
     return ChatOpenAI(
         model=model_name,
         temperature=0,
@@ -47,7 +47,7 @@ def make_ollama(model_name: str = None):
     )
 
 class LlamaCppEmbeddings:
-    def __init__(self, base_url="http://localhost:11435/v1", model="embedding"):
+    def __init__(self, base_url="http://localhost:11434/v1", model="bge-m3:latest"):
         self.client = OpenAIClient(
             base_url=base_url,
             api_key="ollama"
@@ -78,5 +78,5 @@ class LlamaCppEmbeddings:
     def __call__(self, text):
         return self.embed_query(text)
 
-def make_embedding(base_url="http://localhost:11435/v1", model="embedding"):
+def make_embedding(base_url="http://localhost:11434/v1", model="bge-m3:latest"):
     return LlamaCppEmbeddings(base_url=base_url, model=model)
