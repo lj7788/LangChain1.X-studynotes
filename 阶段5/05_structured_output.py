@@ -92,6 +92,7 @@ def demo_json_structured():
 
     # 用 JSON Schema 定义输出结构（返回 dict）
     json_schema = {
+        "title": "CityInfo",
         "type": "object",
         "properties": {
             "city": {"type": "string", "description": "城市名"},

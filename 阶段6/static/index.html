@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>三国通 - 三国演义智能问答</title>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+    <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+    <style>
+        /* ========== CSS 变量 ========== */
+        :root {
+            --bg-primary: #0f172a;
+            --bg-secondary: #1e293b;
+            --bg-card: rgba(30,41,59,0.85);
+            --border: rgba(148,163,184,0.15);
+            --text-primary: #e2e8f0;
+            --text-secondary: #94a3b8;
+            --text-muted: #64748b;
+            --accent: #c2410c;
+            --accent-light: #fb923c;
+            --accent-glow: rgba(194,65,12,0.25);
+            --user-bubble: linear-gradient(135deg, #1e40af, #3b82f6);
+            --ai-bubble: linear-gradient(135deg, #422006, #78350f);
+            --radius: 12px;
+            --shadow: 0 8px 32px rgba(0,0,0,0.35);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans SC', sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            overflow: hidden;
+        }
+
+        /* ========== 背景装饰 ========== */
+        .bg-decoration {
+            position: fixed; inset: 0; z-index: 0; pointer-events: none;
+            background:
+                radial-gradient(ellipse 80% 50% at 20% 20%, rgba(194,65,12,0.08) 0%, transparent 60%),
+                radial-gradient(ellipse 60% 40% at 80% 80%, rgba(30,64,175,0.06) 0%, transparent 55%);
+        }
+        .bg-grid {
+            position: fixed; inset: 0; z-index: 0; pointer-events: none;
+            background-image: linear-gradient(rgba(148,163,184,0.03) 1px, transparent 1px),
+                              linear-gradient(90deg, rgba(148,163,184,0.03) 1px, transparent 1px);
+            background-size: 48px 48px;
+        }
+
+        /* ========== 主布局 ========== */
+        #app {
+            position: relative; z-index: 1;
+            display: flex; flex-direction: column; height: 100vh;
+            max-width: 100%; margin: 0 auto;
+        }
+
+        /* ========== 头部 ========== */
+        .header {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 16px 20px;
+            background: var(--bg-card);
+            backdrop-filter: blur(16px);
+            border-bottom: 1px solid var(--border);
+            user-select: none;
+        }
+        .header-left { display: flex; align-items: center; gap: 12px; }
+        .logo-icon {
+            width: 38px; height: 38px; border-radius: 10px;
+            background: linear-gradient(135deg, var(--accent), var(--accent-light));
+            display: flex; align-items: center; justify-content: center;
+            font-size: 18px; font-weight: 900; color: #fff;
+            box-shadow: 0 4px 16px var(--accent-glow);
+        }
+        .header-title h1 {
+            font-size: 17px; font-weight: 700; letter-spacing: 1px;
+            background: linear-gradient(90deg, var(--text-primary), var(--accent-light));
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+        }
+        .header-title p {
+            font-size: 11px; color: var(--text-muted); margin-top: 1px;
+        }
+        .status-badge {
+            display: flex; align-items: center; gap: 6px;
+            padding: 5px 12px; border-radius: 20px;
+            background: rgba(34,197,94,0.1); color: #4ade80;
+            font-size: 12px; font-weight: 500;
+        }
+        .status-dot {
+            width: 7px; height: 7px; border-radius: 50%; background: #4ade80;
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse { 0%,100%{opacity:1}50%{opacity:.4} }
+        .status-badge.offline { background: rgba(239,68,68,0.1); color: #f87171; }
+        .status-badge.offline .status-dot { background: #f87171; animation: none; }
+
+        /* ========== 聊天区域 ========== */
+        .chat-area {
+            flex: 1; overflow-y: auto; padding: 20px;
+            scroll-behavior: smooth;
+        }
+        .chat-area::-webkit-scrollbar { width: 5px; }
+        .chat-area::-webkit-scrollbar-track { background: transparent; }
+        .chat-area::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+        /* 欢迎消息 */
+        .welcome-msg {
+            text-align: center; padding: 60px 20px;
+        }
+        .welcome-msg .big-icon {
+            font-size: 52px; margin-bottom: 14px;
+        }
+        .welcome-msg h2 {
+            font-size: 22px; font-weight: 700; color: var(--text-primary);
+            margin-bottom: 8px;
+        }
+        .welcome-msg p { font-size: 14px; color: var(--text-muted); line-height: 1.6; max-width: 420px; margin: 0 auto; }
+        .quick-actions {
+            display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin-top: 20px;
+        }
+        .quick-btn {
+            padding: 8px 16px; border-radius: 20px; border: 1px solid var(--border);
+            background: var(--bg-secondary); color: var(--text-secondary);
+            font-size: 13px; cursor: pointer; transition: all 0.2s;
+        }
+        .quick-btn:hover { border-color: var(--accent-light); color: var(--accent-light); transform: translateY(-1px); }
+
+        /* 消息气泡 */
+        .msg-row { display: flex; margin-bottom: 18px; gap: 10px; animation: fadeUp 0.35s ease-out; }
+        .msg-row.user { justify-content: flex-end; }
+        @keyframes fadeUp { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:none} }
+
+        .avatar {
+            width: 36px; height: 36px; border-radius: 10px; flex-shrink: 0;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 15px; font-weight: 700;
+        }
+        .avatar.ai {
+            background: linear-gradient(135deg, var(--accent), var(--accent-light)); color: #fff;
+            box-shadow: 0 3px 12px var(--accent-glow);
+        }
+        .avatar.user { background: var(--user-bubble); color: #fff; }
+
+        .bubble {
+            max-width: 72%; padding: 13px 17px; border-radius: var(--radius);
+            line-height: 1.68; font-size: 14px; word-break: break-word;
+        }
+        .bubble.ai {
+            background: var(--ai-bubble);
+            border: 1px solid rgba(194,65,12,0.2);
+            border-bottom-left-radius: 4px;
+            color: #fed7aa;
+        }
+        .bubble.user {
+            background: var(--user-bubble);
+            color: #dbeafe; border-bottom-right-radius: 4px;
+        }
+
+        .msg-meta { font-size: 11px; color: var(--text-muted); margin-top: 5px; display: flex; align-items: center; gap: 6px; }
+        .intent-tag {
+            display: inline-block; padding: 1px 8px; border-radius: 8px;
+            font-size: 10px; font-weight: 600; text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .intent-chat      { background: rgba(99,102,241,.2);   color: #a5b4fc; }
+        .intent-retrieval { background: rgba(14,165,233,.2);   color: #7dd3fc; }
+        .intent-character{ background: rgba(168,85,247,.2);   color: #d8b4fe; }
+        .intent-event    { background: rgba(236,72,153,.2);   color: #f9a8d4; }
+        .intent-analysis { background: rgba(34,197,94,.2);     color: #86efac; }
+        .intent-unknown  { background: rgba(100,116,139,.2);   color: #94a3b8; }
+
+        /* 加载动画 */
+        .typing-row { display: flex; gap: 10px; margin-bottom: 18px; align-items: center; }
+        .typing-dots { display: flex; gap: 4px; padding: 14px 20px; background: var(--ai-bubble); border-radius: var(--radius); border-bottom-left-radius: 4px; }
+        .typing-dots span {
+            width: 8px; height: 8px; border-radius: 50%; background: var(--accent-light);
+            animation: bounce 1.4s infinite ease-in-out;
+        }
+        .typing-dots span:nth-child(2) { animation-delay: 0.16s; }
+        .typing-dots span:nth-child(3) { animation-delay: 0.32s; }
+        @keyframes bounce { 0%,80%,100%{transform:scale(0.6); opacity:.4} 40%{transform:scale(1); opacity:1} }
+        .loading-timer {
+            font-size: 11px; color: var(--text-muted);
+            margin-left: 10px; white-space: nowrap;
+        }
+
+        /* 错误消息 */
+        .error-msg {
+            background: rgba(220,38,38,0.1); border: 1px solid rgba(220,38,38,0.2);
+            color: #fca5a5; padding: 12px 16px; border-radius: var(--radius); font-size: 13px;
+        }
+
+        /* ========== 底部输入区 ========== */
+        .input-area {
+            padding: 14px 20px 18px;
+            background: var(--bg-card);
+            backdrop-filter: blur(16px);
+            border-top: 1px solid var(--border);
+        }
+        .input-wrapper {
+            display: flex; gap: 10px; align-items: flex-end;
+            max-width: 800px; margin: 0 auto;
+        }
+        .input-box {
+            flex: 1; display: flex; align-items: flex-end;
+            background: var(--bg-secondary); border: 1px solid var(--border);
+            border-radius: var(--radius); padding: 4px 6px;
+            transition: border-color 0.2s;
+        }
+        .input-box:focus-within { border-color: var(--accent-light); box-shadow: 0 0 0 3px var(--accent-glow); }
+        textarea {
+            flex: 1; background: none; border: none; outline: none; resize: none;
+            color: var(--text-primary); font-size: 14px; line-height: 1.5;
+            padding: 8px 10px; max-height: 120px; min-height: 22px;
+            font-family: inherit;
+        }
+        textarea::placeholder { color: var(--text-muted); }
+        .send-btn {
+            width: 42px; height: 42px; border-radius: 10px; border: none;
+            background: linear-gradient(135deg, var(--accent), var(--accent-light));
+            color: #fff; cursor: pointer; font-size: 18px;
+            display: flex; align-items: center; justify-content: center;
+            transition: all 0.2s; flex-shrink: 0;
+            box-shadow: 0 4px 14px var(--accent-glow);
+        }
+        .send-btn:hover:not(:disabled) { transform: scale(1.06); box-shadow: 0 6px 20px var(--accent-glow); }
+        .send-btn:disabled { opacity: 0.45; cursor: not-allowed; }
+        .input-hint { text-align: center; font-size: 11px; color: var(--text-muted); margin-top: 8px; }
+
+        /* ========== 响应式 ========== */
+        @media (max-width: 600px) {
+            .header-title h1 { font-size: 15px; }
+            .status-badge { display: none; }
+            .bubble { max-width: 88%; }
+            .input-area { padding: 10px 14px 14px; }
+        }
+    </style>
+</head>
+<body>
+<div class="bg-decoration"></div>
+<div class="bg-grid"></div>
+
+<div id="app">
+    <!-- ====== 头部 ====== -->
+    <header class="header">
+        <div class="header-left">
+            <div class="logo-icon">三</div>
+            <div class="header-title">
+                <h1>三国通</h1>
+                <p>三国演义智能问答系统</p>
+            </div>
+        </div>
+        <div class="status-badge" :class="{offline:!serverReady}">
+            <span class="status-dot"></span>{{ serverReady ? '已连接' : '连接中...' }}
+        </div>
+    </header>
+
+    <!-- ====== 聊天区域 ====== -->
+    <main class="chat-area" ref="chatArea">
+        <!-- 欢迎页 -->
+        <div v-if="messages.length===0 && !loading" class="welcome-msg">
+            <div class="big-icon">&#9760;</div>
+            <h2>你好，我是三国通</h2>
+            <p>基于《三国演义》全文的 RAG + LangGraph 智能问答系统。<br>你可以问我关于人物、战役、原文引用等任何问题。</p>
+            <div class="quick-actions">
+                <button class="quick-btn" v-for="q in quickQuestions" :key="q" @click="sendQuick(q)" :disabled="loading">{{ q }}</button>
+            </div>
+        </div>
+
+        <!-- 消息列表 -->
+        <template v-for="(msg,i) in messages" :key="i">
+            <!-- 用户消息 -->
+            <div v-if="msg.role==='user'" class="msg-row user">
+                <div class="bubble user" v-html="formatText(msg.content)"></div>
+                <div class="avatar user">我</div>
+            </div>
+            <!-- AI消息 -->
+            <div v-else class="msg-row">
+                <div class="avatar ai">三</div>
+                <div>
+                    <div class="bubble ai" v-html="formatText(msg.content)"></div>
+                    <div class="msg-meta" v-if="msg.intent">
+                        <span class="intent-tag" :class="'intent-'+msg.intent">{{ intentLabel(msg.intent) }}</span>
+                        <span v-if="msg.elapsed">{{ msg.elapsed }}s</span>
+                        <span>{{ msg.time }}</span>
+                    </div>
+                </div>
+            </div>
+        </template>
+
+        <!-- 打字动画 -->
+        <div v-if="loading" class="typing-row">
+            <div class="avatar ai">三</div>
+            <div class="typing-dots"><span></span><span></span><span></span></div>
+            <span class="loading-timer">{{ loadingTime }}s</span>
+        </div>
+
+        <!-- 错误提示 -->
+        <div v-if="errorMsg" class="msg-row">
+            <div class="avatar ai">三</div>
+            <div class="error-msg">{{ errorMsg }}</div>
+        </div>
+    </main>
+
+    <!-- ====== 输入区 ====== -->
+    <footer class="input-area">
+        <div class="input-wrapper">
+            <div class="input-box">
+                <textarea
+                    ref="inputRef"
+                    v-model="inputText"
+                    placeholder="输入你的问题... (Enter发送, Shift+Enter换行)"
+                    rows="1"
+                    @keydown.enter.exact.prevent="onSend"
+                    @keydown.enter.shift.exact="allowLineBreak"
+                    @input="autoResize"
+                ></textarea>
+            </div>
+            <button class="send-btn" @click="onSend" :disabled="!inputText.trim() || loading" title="发送">&#10148;</button>
+        </div>
+        <div class="input-hint">支持闲聊 / 人物分析 / 事件检索 / 原文引用 / 综合分析</div>
+    </footer>
+</div>
+
+<script>
+const { createApp, ref, reactive, computed, onMounted, nextTick } = Vue;
+
+createApp({
+    setup() {
+        // ---- State ----
+        const messages = ref([]);
+        const inputText = ref('');
+        const loading = ref(false);
+        const serverReady = ref(false);
+        const errorMsg = ref('');
+        const sessionId = ref('');
+        const chatArea = ref(null);
+        const inputRef = ref(null);
+        const loadingTime = ref(0);       // 加载计时（秒）
+        let _timerInterval = null;         // 计时器 ID
+
+        // 快捷问题
+        const quickQuestions = ref([
+            '桃园结义的三个人是谁？',
+            '诸葛亮是一个什么样的人？',
+            '赤壁之战诸葛亮怎么借东风？请引用原文',
+            '曹操和刘备用人之道有什么不同？',
+        ]);
+
+        const API_BASE = '';  // 同源部署，无需前缀
+
+        // ---- Methods ----
+        function formatText(text) {
+            // 转义HTML，保留换行格式
+            let escaped = text.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+            // 高亮【第X回】标记
+            escaped = escaped.replace(/【第(\d+)回】/g, '<strong style="color:#fb923c;">【第$1回】</strong>');
+            // 段落换行
+            escaped = escaped.replace(/\n/g, '<br>');
+            return escaped;
+        }
+
+        function intentLabel(intent) {
+            const map = { chat:'闲聊', retrieval:'原文检索', character:'人物分析', event:'事件查询', analysis:'综合分析' };
+            return map[intent] || intent;
+        }
+
+        function getTime() {
+            const d = new Date();
+            return `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+        }
+
+        function scrollToBottom() {
+            nextTick(() => {
+                if (chatArea.value) chatArea.value.scrollTop = chatArea.value.scrollHeight;
+            });
+        }
+
+        function autoResize() {
+            const el = inputRef.value;
+            if (!el) return;
+            el.style.height = 'auto';
+            el.style.height = Math.min(el.scrollHeight, 120) + 'px';
+        }
+
+        function allowLineBreak(e) {
+            // Shift+Enter 允许换行，默认行为
+        }
+
+        async function checkServer() {
+            try {
+                const res = await axios.get(`${API_BASE}/api/status`);
+                serverReady.value = res.data.status === 'ready';
+            } catch {
+                setTimeout(checkServer, 3000);
+            }
+        }
+
+        async function onSend() {
+            const text = inputText.value.trim();
+            if (!text || loading.value) return;
+
+            // 添加用户消息
+            messages.value.push({ role: 'user', content: text });
+            inputText.value = '';
+            autoResize();
+            loading.value = true;
+            errorMsg.value = '';
+            // 启动计时器
+            loadingTime.value = 0;
+            clearInterval(_timerInterval);
+            _timerInterval = setInterval(() => { loadingTime.value++; }, 1000);
+            scrollToBottom();
+
+            try {
+                const res = await axios.post(`${API_BASE}/api/chat`, {
+                    message: text,
+                    session_id: sessionId.value,
+                }, { timeout: 300000 });  // 5分钟超时（LLM推理可能很慢）
+
+                sessionId.value = res.data.session_id;
+
+                messages.value.push({
+                    role: 'assistant',
+                    content: res.data.reply,
+                    intent: res.data.intent,
+                    time: getTime(),
+                    elapsed: loadingTime.value + 's',
+                });
+
+            } catch (err) {
+                const detail = err.response?.data?.detail || err.message;
+                errorMsg.value = `请求失败: ${detail}`;
+                console.error('[Chat Error]', err);
+            } finally {
+                loading.value = false;
+                clearInterval(_timerInterval);
+                _timerInterval = null;
+                scrollToBottom();
+            }
+        }
+
+        function sendQuick(q) {
+            inputText.value = q;
+            onSend();
+        }
+
+        // ---- Lifecycle ----
+        onMounted(() => {
+            checkServer();
+            inputRef.value?.focus();
+        });
+
+        return {
+            messages, inputText, loading, loadingTime, serverReady, errorMsg,
+            chatArea, inputRef, quickQuestions,
+            formatText, intentLabel, onSend, sendQuick, autoResize, allowLineBreak,
+        };
+    }
+}).mount('#app');
+</script>
+</body>
+</html>

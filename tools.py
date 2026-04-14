@@ -39,6 +39,7 @@ def make_openai(model_name: str = None):
 def make_ollama(model_name: str = None):
     if model_name is None:
         model_name = "gemma4:e4b-it-q4_K_M_opt"
+    print(f"[Ollama] 使用模型: {model_name}")
     return ChatOpenAI(
         model=model_name,
         temperature=0,

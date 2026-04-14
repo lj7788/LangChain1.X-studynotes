@@ -65,7 +65,7 @@ def demo_chain_retry():
     print("Part 2: 链级重试 (.with_retry())")
     print("=" * 50 + "\n")
 
-    from langchain.runnables import RunnableLambda
+    from langchain_core.runnables import RunnableLambda
 
     llm = make_ollama()
     prompt = ChatPromptTemplate.from_template("回答: {question}")
@@ -74,11 +74,11 @@ def demo_chain_retry():
     # 为整个链添加重试
     retryable_chain = chain.with_retry(
         stop_after_attempt=3,
-        wait_exponential_jitter=False,
-        max_wait=10,
+        wait_exponential_jitter=True,
+        exponential_jitter_params={"max": 10},
     )
 
-    print("  配置: 最多3次重试, 最大等待10秒\n")
+    print("  配置: 最多3次重试, 指数退避最大等待10秒\n")
     result = retryable_chain.invoke({"question": "1+1等于几?"})
     print(f"  结果: {result}")
 
@@ -135,8 +135,12 @@ def demo_unstable_api():
     print("Part 4: 不稳定 API + 自动重试")
     print("=" * 50 + "\n")
 
+    from langchain_core.runnables import RunnableLambda
+
     unreliable = UnreliableLLM(failure_rate=0.7)
-    retry_chain = unreliable.with_retry(stop_after_attempt=5)
+    # 用 RunnableLambda 包装，使其获得 .with_retry() 等 Runnable 方法
+    unreliable_runnable = RunnableLambda(unreliable.invoke)
+    retry_chain = unreliable_runnable.with_retry(stop_after_attempt=5)
 
     print(f"  模拟 API: 70% 失败率")
     print(f"  重试策略: 最多5次\n")

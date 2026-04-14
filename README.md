@@ -363,6 +363,59 @@ python 阶段2/20_rag_sg_load.py
 1. **RAG 问答系统** - 结合知识库的自然语言问答
 2. **AI 聊天机器人** - 带记忆的对话系统
 3. **Agent 自动化任务** - 使用工具自动完成任务
+4. **三国演义智能问答系统** - 基于全书的 RAG + LangGraph 专家系统（命令行）
+5. **三国通 Web API** - FastAPI 后端 + Vue3 前端交互式聊天界面（**收官项目**）
+
+### 示例代码
+
+| 文件 | 内容 | 综合运用 |
+| ---- | ---- | ---- |
+| 01_rag_qa_system.py | **RAG 问答系统实战** - 基于知识库的自然语言问答 | LCEL + 文档处理 + 检索策略 + 对话记忆 |
+| 02_chatbot_with_memory.py | **AI 聊天机器人实战** - 带意图识别和记忆的对话系统 | LangGraph + 结构化输出 + 工具调用 + RAG |
+| 03_agent_automation.py | **Agent 自动化任务实战** - 数据分析自动化助手 | 任务规划 + 多步循环 + 工具协作 + 报告生成 |
+| 04_sg_expert_demo.py | **三国演义智能问答系统** - 基于全书的 RAG + LangGraph 专家系统 | RAG检索 + 意图识别 + 多工具协作 + 人物事件分析 |
+| 05_sg_api_server.py | **🏆 三国通 Web API** - FastAPI + Vue3 前端聊天界面 | FastAPI + RESTful API + Vue3 SPA + 会话管理 |
+
+**代码位置：** `./阶段6/`
+
+### 🏆 收官项目：三国通 Web 应用
+
+基于《三国演义》111回全文的完整 RAG + LangGraph 智能问答 Web 应用，综合运用了**全部六个阶段**的知识点：
+
+#### 技术栈总览
+
+```
+┌──────────────────────────────────────────────────────┐
+│                    三国通 架构                         │
+├──────────┬─────────────────────┬─────────────────────┤
+│  前端     │      后端           │       数据层         │
+│ Vue3+Axios│   FastAPI          │  FAISS + bge-m3     │
+│ 暗色中国风 │  LangGraph 图      │  三国演义111回全文    │
+│ 实时计时器 │  5路意图路由        │  MMR 检索策略        │
+└──────────┴─────────────────────┴─────────────────────┘
+```
+
+#### 知识点覆盖
+
+| 阶段 | 知识点 | 在项目中的应用 |
+|------|--------|--------------|
+| **阶段一** | LCEL、Prompt Template、Output Parser | 构建 RAG 链、结构化意图分类 |
+| **阶段二** | FAISS 向量数据库、bge-m3 Embeddings、文档分割 | 全书向量化索引、MMR 检索 |
+| **阶段三** | RunnableWithMessageHistory、MMR 检索 | 多轮对话记忆保持 |
+| **阶段四** | LangGraph StateGraph、条件边、工具调用、add_messages | 5路意图路由、4个专用工具 |
+| **阶段五** | with_structured_output(Pydantic)、错误重试 | 5分类意图识别、LLM 容错 |
+| **阶段六** | 项目4全部能力 + FastAPI + Vue3 | 完整的 Web 服务部署 |
+
+#### 运行方式
+
+```bash
+# 启动三国通 Web 服务
+python 阶段6/05_sg_api_server.py
+
+# 浏览器访问 http://localhost:8000
+```
+
+详细说明见 [阶段6 README](./阶段6/README.md)
 
 ---
 
